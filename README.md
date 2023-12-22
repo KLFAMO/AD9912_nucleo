@@ -1,6 +1,6 @@
 # AD9912_nucleo
 ## Installing
-### Bottom board (DDS AD9959 EVAL)
+### Bottom board (DDS AD9912 EVAL)
 * connect 100 MHz (around 3 dBm) reference signal to `SYSCLK`
 * connect output to `DUT FILTER OUT` 
 ![image](https://github.com/KLFAMO/AD9912_nucleo/assets/114686928/b806660c-8974-44a4-b481-348a31766cbc)
