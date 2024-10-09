@@ -56,6 +56,48 @@ UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 
+char uart_bufT[1000];
+char get_info[1000];
+int get_state = 0;
+//char uart_bufR[100];
+int uart_buf_len;
+
+char spi_buf[100];
+char spi_addr[20];
+
+const uint16_t READ_Intruction = 0x8000;
+
+const uint16_t Config_Addr = 0x0000;
+const uint8_t SDO_Active = 0x18 | 0x81; // 0x81 or 0x01
+
+const uint16_t Read_Buffer_Addr = 0x0004;
+const uint8_t Read_Buffer = 0x00 | 0x01;	// read buffered registers instead of currently used
+const uint8_t Read_Currently = 0x00;
+
+const uint16_t UPD_Addr = 0x0005;
+const uint8_t UPD_Auto = 0x00 | 0x01;	// Automatically Update registers
+
+const uint16_t Power_Addr = 0x0010;
+const uint8_t PLL_Bypassed = 0xD0;	// Power of PLL_Multiplier will be down
+const uint8_t PLL_Enabled = 0xC0;	// Power of PLL_Multiplier will be up
+
+const uint16_t N_divider_Addr = 0x0020;
+uint8_t N_Divider = 0x03;	// range 0x00 to 0x1F (0 to 31) + 2 = 2 to 33. def. is 0x12 (18) + 2 = 20 (x 2) = 40 (sysclk = 25 MHz) = 1 GHz
+
+const uint16_t FTW_Addr6 = 0x01A6;
+const uint16_t FTW_Addr7 = 0x01A7;
+const uint16_t FTW_Addr8 = 0x01A8;
+const uint16_t FTW_Addr9 = 0x01A9;
+const uint16_t FTW_AddrA = 0x01AA;
+const uint16_t FTW_AddrB = 0x01AB;
+double f_s = 1000.0;	// MHz of sysclk
+double f_DDS = 0.0;	// MHz of initial frequency
+double f_ref = 100.0;	// MHz of reference frequency
+
+const uint16_t DAC_Current_AddrB = 0x040B;
+const uint16_t DAC_Current_AddrC = 0x040C;
+const double I_DAC_REF = 0.120;	// mA if R_DAC_REF = 10 k[ohm]
+const double I_DAC_FS = 10.0;	// mA in output
 
 /* USER CODE END PV */
 
@@ -66,7 +108,13 @@ static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_SPI4_Init(void);
+
 /* USER CODE BEGIN PFP */
+
+void send_freq(double fdds);
+void send_current(double idac);
+void set_ref(double ref);
+double get_freq(void);
 
 /* USER CODE END PFP */
 
@@ -129,6 +177,11 @@ int main(void)
 
 
   HAL_TIM_Base_Start_IT(&htim7);
+
+  send_freq(123.123);
+  send_current(31.7);
+  set_ref(100);
+  par.rf.val = get_freq();
 
   /* USER CODE END 2 */
 
@@ -395,6 +448,180 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void send_freq(double fdds)
+{
+	uint64_t ftw;
+	uint8_t value;
+
+	if(fdds > 400.0){
+		fdds = 400.0;
+	}
+
+	ftw = round((fdds/f_s) * pow(2, 48));
+
+	spi_addr[0] = ((uint8_t*)&FTW_Addr6)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_Addr6)[0];
+	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[0];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_Addr7)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_Addr7)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[1];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_Addr8)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_Addr8)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[2];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_Addr9)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_Addr9)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[3];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_AddrA)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_AddrA)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[4];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_AddrB)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_AddrB)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[5];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+
+	// Update registers
+	HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_SET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_RESET);
+}
+
+void send_current(double idac)
+{
+	uint16_t fsc;
+	uint8_t value;
+
+	if(idac < 8.6){
+
+		idac = 8.6;
+	}else if(idac > 31.7){
+
+		idac = 31.7;
+	}
+
+	fsc = round(1024/192 * (idac/I_DAC_REF - 72));
+
+	spi_addr[0] = ((uint8_t*)&DAC_Current_AddrB)[1];
+	spi_addr[1] = ((uint8_t*)&DAC_Current_AddrB)[0];
+	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&fsc)[0];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&DAC_Current_AddrC)[1];
+	spi_addr[1] = ((uint8_t*)&DAC_Current_AddrC)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&fsc)[1];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+}
+
+void set_ref(double ref)
+{
+	f_ref = ref;
+
+	spi_addr[0] = ((uint8_t*)&Power_Addr)[1];
+	spi_addr[1] = ((uint8_t*)&Power_Addr)[0];
+
+	if(ref == 100.0){
+
+		f_s = 1000.0;
+
+		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+		HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+		HAL_SPI_Transmit(&hspi4, (uint8_t*)&PLL_Enabled, 1, 100);
+		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+
+//		// set N-divider for PLL
+//		spi_addr[0] = ((uint8_t*)&N_divider_Addr)[1];
+//		spi_addr[1] = ((uint8_t*)&N_divider_Addr)[0];
+//		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+//		HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+//		HAL_SPI_Transmit(&hspi4, (uint8_t*)&N_Divider, 1, 100);
+//		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+
+	}else if(ref == 250.0 || ref == 1000.0){
+
+		f_s = ref;
+
+		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+		HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+		HAL_SPI_Transmit(&hspi4, (uint8_t*)&PLL_Bypassed, 1, 100);
+		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+
+		send_freq(f_DDS);
+	}
+}
+
+
+double get_freq(){
+
+	uint16_t address;
+	uint64_t ftw = 0x0;
+	double fDDS = 0;
+
+	// read freq. value
+	address = READ_Intruction | FTW_Addr6;
+	spi_addr[0] = ((uint8_t*)&address)[1];
+	spi_addr[1] = ((uint8_t*)&address)[0];
+	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+	HAL_SPI_Receive(&hspi4, (uint8_t*)spi_buf, 1, 100);
+	((uint8_t *)&ftw)[0] = (unsigned int)spi_buf[0];
+	address = READ_Intruction | FTW_Addr7;
+	spi_addr[0] = ((uint8_t*)&address)[1];
+	spi_addr[1] = ((uint8_t*)&address)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+	HAL_SPI_Receive(&hspi4, (uint8_t*)spi_buf, 1, 100);
+	((uint8_t *)&ftw)[1] = (unsigned int)spi_buf[0];
+	address = READ_Intruction | FTW_Addr8;
+	spi_addr[0] = ((uint8_t*)&address)[1];
+	spi_addr[1] = ((uint8_t*)&address)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+	HAL_SPI_Receive(&hspi4, (uint8_t*)spi_buf, 1, 100);
+	((uint8_t *)&ftw)[2] = (unsigned int)spi_buf[0];
+	address = READ_Intruction | FTW_Addr9;
+	spi_addr[0] = ((uint8_t*)&address)[1];
+	spi_addr[1] = ((uint8_t*)&address)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+	HAL_SPI_Receive(&hspi4, (uint8_t*)spi_buf, 1, 100);
+	((uint8_t *)&ftw)[3] = (unsigned int)spi_buf[0];
+	address = READ_Intruction | FTW_AddrA;
+	spi_addr[0] = ((uint8_t*)&address)[1];
+	spi_addr[1] = ((uint8_t*)&address)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+	HAL_SPI_Receive(&hspi4, (uint8_t*)spi_buf, 1, 100);
+	((uint8_t *)&ftw)[4] = (unsigned int)spi_buf[0];
+	address = READ_Intruction | FTW_AddrB;
+	spi_addr[0] = ((uint8_t*)&address)[1];
+	spi_addr[1] = ((uint8_t*)&address)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+	HAL_SPI_Receive(&hspi4, (uint8_t*)spi_buf, 1, 100);
+	((uint8_t *)&ftw)[5] = (unsigned int)spi_buf[0];
+	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+
+	fDDS = (ftw/pow(2, 48)) * f_s;
+
+	get_state = 1;
+	return fDDS;
+}
 
 
 /* USER CODE END 4 */
