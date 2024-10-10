@@ -94,6 +94,7 @@ double f_s = 1000.0;	// MHz of sysclk
 double f_DDS = 0.0;	// MHz of initial frequency
 double f_ref = 100.0;	// MHz of reference frequency
 double last_f = 0;
+double last_cur = 0;
 
 const uint16_t DAC_Current_AddrB = 0x040B;
 const uint16_t DAC_Current_AddrC = 0x040C;
@@ -180,7 +181,7 @@ int main(void)
 
   send_freq(123.123);
   send_freq(111);
-  send_current(31.7);
+  send_current(par.cur.val);
   set_ref(100);
   par.rf.val = get_freq();
 
@@ -690,6 +691,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  send_freq(par.f.val);
 		  last_f = par.f.val;
 		  par.rf.val = get_freq();
+	  }
+
+	  if (last_cur != par.cur.val){
+		  send_current(par.cur.val);
+		  last_cur = par.cur.val;
+	  }
+
+	  if (par.ded.on == 1){
+		  par.f.val += par.ded.hzps.val*1e6;
 	  }
 
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, RESET);

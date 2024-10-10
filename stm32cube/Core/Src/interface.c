@@ -25,54 +25,24 @@ pointer getPointer(pointer p, char *s)
   if (strcmp(p.type, "parameters") == 0)
   {
     parameters *ptmp = (parameters *)p.p;
-    if (strcmp(s, "ADC") == 0)
-      pout = (pointer){.p = (void *)&(ptmp->adc), .type = "adc"};
-    if (strcmp(s, "DAC") == 0)
-      pout = (pointer){.p = (void *)&(ptmp->dac), .type = "dac"};
     if (strcmp(s, "F") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->f), .type = "value"};
     if (strcmp(s, "RF") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->rf), .type = "value"};
+    if (strcmp(s, "CUR") == 0)
+	  pout = (pointer){.p = (void *)&(ptmp->cur), .type = "value"};
+    if (strcmp(s, "DED") == 0)
+	  pout = (pointer){.p = (void *)&(ptmp->ded), .type = "ded"};
   }
 
-  if (strcmp(p.type, "adc") == 0)
+  if (strcmp(p.type, "ded") == 0)
   {
-    sadc *ptmp = (sadc *)p.p;
-    if (strcmp(s, "CH1") == 0)
-      pout = (pointer){.p = (void *)&(ptmp->ch1), .type = "adcchannel"};
-    if (strcmp(s, "CH2") == 0)
-      pout = (pointer){.p = (void *)&(ptmp->ch2), .type = "adcchannel"};
+    sded *ptmp = (sded *)p.p;
+    if (strcmp(s, "ON") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->on), .type = "value"};
+    if (strcmp(s, "HZPS") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->hzps), .type = "value"};
   }
-  if (strcmp(p.type, "adcchannel") == 0)
-  {
-    sadcchannel *ptmp = (sadcchannel *)p.p;
-    if (strcmp(s, "RAW") == 0)
-          pout = (pointer){.p = (void *)&(ptmp->raw), .type = "value"};
-    if (strcmp(s, "VOLT") == 0)
-      pout = (pointer){.p = (void *)&(ptmp->volt), .type = "value"};
-    if (strcmp(s, "AVR") == 0)
-      pout = (pointer){.p = (void *)&(ptmp->avr), .type = "value"};
-    if (strcmp(s, "CORON") == 0)
-      pout = (pointer){.p = (void *)&(ptmp->coron), .type = "value"};
-    if (strcmp(s, "CORFACTOR") == 0)
-      pout = (pointer){.p = (void *)&(ptmp->corfactor), .type = "value"};
-  }
-
-  if (strcmp(p.type, "dac") == 0)
-    {
-      sdac *ptmp = (sdac *)p.p;
-      if (strcmp(s, "CH1") == 0)
-        pout = (pointer){.p = (void *)&(ptmp->ch1), .type = "dacchannel"};
-    }
-
-  if (strcmp(p.type, "dacchannel") == 0)
-    {
-      sdacchannel *ptmp = (sdacchannel *)p.p;
-      if (strcmp(s, "RAW") == 0)
-            pout = (pointer){.p = (void *)&(ptmp->raw), .type = "value"};
-      if (strcmp(s, "VOLT") == 0)
-        pout = (pointer){.p = (void *)&(ptmp->volt), .type = "value"};
-    }
 
   if (strcmp(p.type, "value") == 0)
   {
@@ -132,11 +102,9 @@ void initInterface(void)
 {
   par.f = (value){.val = 0, .min = 0, .max = 400};
   par.rf = (value){.val = 0, .min = 0, .max = 400};
-  par.adc.ch1.avr = (value){.val = 50, .min = 1, .max = 100};
-  par.adc.ch1.volt = (value){.val = 0, .min = 0, .max = 41000};
-  par.adc.ch1.coron = (value){.val = 0, .min = 0, .max = 1};
-  par.adc.ch1.corfactor = (value){.val = 1, .min = 0, .max = 100};
-  par.dac.ch1.volt = (value){.val = 0, .min = 0, .max = 5};
+  par.cur = (value){.val = 31.7, .min = 0, .max = 31.7};
+  par.ded.on = (value){.val = 0, .min = 0, .max = 1};
+  par.ded.hzps = (value){.val = 0.12345678912345, .min = -10, .max = 10};
 }
 
 /*------------------------*/
@@ -354,32 +322,81 @@ int rmwhite(char *str)
   return 0;
 }
 
-double atofmy(char *str)
-{
-  double out;
-  int isdot = 0, i, len, dotpos = 0, inttemp;
-  len = strlen(str);
-  if (str[len - 1] == '\n')
-    len = len - 1;
-  for (i = 0; i < len; i++)
-  {
-    if (str[i] == '.')
-    {
-      if (isdot == 1)
-        return 0;
-      isdot = 1;
-      dotpos = i;
+//double atofmy(char *str)
+//{
+//  double out;
+//  int isdot = 0, i, len, dotpos = 0, inttemp;
+//  len = strlen(str);
+//  if (str[len - 1] == '\n')
+//    len = len - 1;
+//  for (i = 0; i < len; i++)
+//  {
+//    if (str[i] == '.')
+//    {
+//      if (isdot == 1)
+//        return 0;
+//      isdot = 1;
+//      dotpos = i;
+//    }
+//    if (isdot == 1)
+//    {
+//      str[i] = str[i + 1];
+//    }
+//  }
+//  inttemp = atoi(str);
+//  out = (double)inttemp;
+//  if (isdot)
+//    out = out * pow(10, -1 * (len - dotpos - 1));
+//  return out;
+//}
+
+
+double atofmy(char *str) {
+    double result = 0.0;  // result
+    double fraction_part = 0.0;
+    int sign = 1;
+    int i = 0;
+    int is_fraction = 0;
+    double divisor = 10.0;
+
+    // cut on the first white space
+    while (str[i] == ' ' || str[i] == '\t') {
+        i++;
     }
-    if (isdot == 1)
-    {
-      str[i] = str[i + 1];
+
+    // check sign
+    if (str[i] == '-') {
+        sign = -1;
+        i++;
+    } else if (str[i] == '+') {
+        i++;
     }
-  }
-  inttemp = atoi(str);
-  out = (double)inttemp;
-  if (isdot)
-    out = out * pow(10, -1 * (len - dotpos - 1));
-  return out;
+
+    // integer part
+    while (str[i] != '\0') {
+        if (str[i] == '.') {
+            // start fractional part
+            is_fraction = 1;
+            i++;
+            continue;
+        }
+
+        // Sprawdzanie, czy mamy cyfrďż˝
+        if (str[i] >= '0' && str[i] <= '9') {
+            if (!is_fraction) {
+                result = result * 10 + (str[i] - '0');
+            } else {
+                fraction_part += (str[i] - '0') / divisor;
+                divisor *= 10.0;
+            }
+        } else {
+            break;
+        }
+        i++;
+    }
+    result += fraction_part;
+    result *= sign;
+    return result;
 }
 
 int ftostr(char *str, double val)
@@ -400,8 +417,8 @@ int ftostr(char *str, double val)
     istr++;
     val = -1 * val;
   }
-  factor = 100000000;
-  while (factor > 0.00000001 && factor > val)
+  factor = 1000000;
+  while (factor > 0.000000000001 && factor > val)
     factor = factor / 10;
   order = (int)log10(factor);
   if (order < 0)
@@ -417,7 +434,7 @@ int ftostr(char *str, double val)
       istr++;
     }
   }
-  for (j = 0; j < 10; j++)
+  for (j = 0; j < 15; j++)
   {
     for (i = 9; i >= 0; i--)
     {
