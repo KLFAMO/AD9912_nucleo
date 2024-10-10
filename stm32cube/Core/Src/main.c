@@ -93,6 +93,7 @@ const uint16_t FTW_AddrB = 0x01AB;
 double f_s = 1000.0;	// MHz of sysclk
 double f_DDS = 0.0;	// MHz of initial frequency
 double f_ref = 100.0;	// MHz of reference frequency
+double last_f = 0;
 
 const uint16_t DAC_Current_AddrB = 0x040B;
 const uint16_t DAC_Current_AddrC = 0x040C;
@@ -108,7 +109,6 @@ static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_SPI4_Init(void);
-
 /* USER CODE BEGIN PFP */
 
 void send_freq(double fdds);
@@ -179,6 +179,7 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim7);
 
   send_freq(123.123);
+  send_freq(111);
   send_current(31.7);
   set_ref(100);
   par.rf.val = get_freq();
@@ -323,7 +324,7 @@ static void MX_TIM7_Init(void)
   htim7.Instance = TIM7;
   htim7.Init.Prescaler = 80;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 300;
+  htim7.Init.Period = 10000;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
@@ -500,7 +501,7 @@ void send_freq(double fdds)
 
 	// Update registers
 	HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_SET);
-	HAL_Delay(1);
+//	HAL_Delay(1);
 	HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_RESET);
 }
 
@@ -684,6 +685,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
   if (htim->Instance == TIM7) {
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, SET);
+
+	  if (last_f != par.f.val){
+		  send_freq(par.f.val);
+		  last_f = par.f.val;
+		  par.rf.val = get_freq();
+	  }
 
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, RESET);
     }
