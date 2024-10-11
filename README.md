@@ -15,7 +15,36 @@ Device may be configurated with DHCP or static IP. See description on the device
 
 ## Communication
 * In case of DHCP mode, chceck assigned IP addres on your DHCP server (at the moment it is not possible to read IP address from the device)
-* Use Telnet client to connect to the device (port 22). After connecting, welcome text with short manual in the console should appear.
+* Use Telnet client to connect to the device (port 10).
 * The device is by default set to work with 100 MHz reference signal.
-* Type `DDS:FREQ 98.23` to set output frequency to 98.23 MHz
-* The amplitude of output signal is by default set to maximum (31mA). To change amplitude use `DDS:AMPL <val>`, where <val> is from 0 to 31. However val=0 does not mean 0 amplitude. It is not possible to switch off output using `DDS:AMPL`, use `DDS:FREQ 0` to switch off dds output.
+
+
+# Commands
+
+User interface is available on port `10`.
+
+Note, that each parameter has max and min value. For instance: `F.MAX`, `F.MIN`. These values can be modified: `F.MAX 130`.
+
+## DDS frequency setting
+
+`F 123.14`  - set frequency 123.14 MHz
+
+`F ?`   - get current F
+
+`RF ?`  - get real frequency set in dds
+
+The microcontroller operates in cyclic mode (with a period of 1ms). After receiving a new parameter value via Ethernet, it will be updated to the DDS in the next microcontroller cycle (within 1ms).
+
+## DDS amplitude setting
+
+`CUR 30.1`
+
+Max value is 31.7.
+
+## DDS dedrift setting
+
+`DED:ON`: dedrift ON/OFF (1-ON, 0-OFF)
+
+`DED:HZPS`: dedrift speed in Hz/s
+
+Dedrift is applied every 1ms. Reference clock is internal oscillator of microcontroller (there will be some callibration mechanism added in the future).
