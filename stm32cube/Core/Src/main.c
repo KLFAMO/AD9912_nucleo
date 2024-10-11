@@ -325,7 +325,7 @@ static void MX_TIM7_Init(void)
   htim7.Instance = TIM7;
   htim7.Init.Prescaler = 80;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 10000;
+  htim7.Init.Period = 1000;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
@@ -698,8 +698,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  last_cur = par.cur.val;
 	  }
 
-	  if (par.ded.on == 1){
-		  par.f.val += par.ded.hzps.val*1e6;
+	  if (par.ded.on.val == 1){
+		  /* divide by 1e6 to convert to MHz,
+		   * multiply by 1e3 to consider 1ms cycle */
+		  par.f.val += par.ded.hzps.val*1e-9;
 	  }
 
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, RESET);
