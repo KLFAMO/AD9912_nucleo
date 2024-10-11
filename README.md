@@ -39,7 +39,7 @@ The microcontroller operates in cyclic mode (with a period of 1ms). After receiv
 
 `CUR 30.1`
 
-Max value is 31.7.
+Max value is 31.7. With this parameter it is possible to change amplitude between around -10dBm (`CUR 0`) to 0dBm (`CUR 31.7`).
 
 ## DDS dedrift setting
 
