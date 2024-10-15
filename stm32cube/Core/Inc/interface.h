@@ -42,7 +42,9 @@ typedef struct{
 
 typedef struct {
     value f;
+    value ftw;
     value rf;
+    value rftw;
     value cur;
     sded ded;
 } parameters;

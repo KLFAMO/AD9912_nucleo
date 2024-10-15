@@ -27,8 +27,12 @@ pointer getPointer(pointer p, char *s)
     parameters *ptmp = (parameters *)p.p;
     if (strcmp(s, "F") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->f), .type = "value"};
+    if (strcmp(s, "FTW") == 0)
+	  pout = (pointer){.p = (void *)&(ptmp->ftw), .type = "value"};
     if (strcmp(s, "RF") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->rf), .type = "value"};
+    if (strcmp(s, "RFTW") == 0)
+	  pout = (pointer){.p = (void *)&(ptmp->rftw), .type = "value"};
     if (strcmp(s, "CUR") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->cur), .type = "value"};
     if (strcmp(s, "DED") == 0)
@@ -101,10 +105,12 @@ void setParam(value *p, double val)
 void initInterface(void)
 {
   par.f = (value){.val = 0, .min = 0, .max = 400};
+  par.ftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
   par.rf = (value){.val = 0, .min = 0, .max = 400};
-  par.cur = (value){.val = 31.7, .min = 0, .max = 31.7};
+  par.rftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
+  par.cur = (value){.val = 31.7, .min = 8.6, .max = 31.7};
   par.ded.on = (value){.val = 0, .min = 0, .max = 1};
-  par.ded.hzps = (value){.val = 0.12345678912345, .min = -10, .max = 10};
+  par.ded.hzps = (value){.val = 0.0, .min = -10, .max = 10};
 }
 
 /*------------------------*/
@@ -417,7 +423,7 @@ int ftostr(char *str, double val)
     istr++;
     val = -1 * val;
   }
-  factor = 1000000;
+  factor = 10000000000000000;
   while (factor > 0.000000000001 && factor > val)
     factor = factor / 10;
   order = (int)log10(factor);

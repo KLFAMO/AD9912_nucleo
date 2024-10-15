@@ -113,6 +113,7 @@ static void MX_SPI4_Init(void);
 /* USER CODE BEGIN PFP */
 
 void send_freq(double fdds);
+void send_ftw(uint64_t ftw);
 void send_current(double idac);
 void set_ref(double ref);
 double get_freq(void);
@@ -171,19 +172,16 @@ int main(void)
   MX_SPI4_Init();
   /* USER CODE BEGIN 2 */
 
-  tcp_server_init();
   //tcp_client_init();
   tcp_server_init();
   initInterface();
 
+  set_ref(100.0);
+  send_freq(par.f.val);
+  send_current(par.cur.val);
+  par.rf.val = get_freq();
 
   HAL_TIM_Base_Start_IT(&htim7);
-
-  send_freq(123.123);
-  send_freq(111);
-  send_current(par.cur.val);
-  set_ref(100);
-  par.rf.val = get_freq();
 
   /* USER CODE END 2 */
 
@@ -402,9 +400,9 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
@@ -451,6 +449,55 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void send_ftw(uint64_t ftw){
+	uint8_t value;
+
+	par.ftw.val = (double)ftw;
+
+	spi_addr[0] = ((uint8_t*)&FTW_Addr6)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_Addr6)[0];
+	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[0];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_Addr7)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_Addr7)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[1];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_Addr8)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_Addr8)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[2];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_Addr9)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_Addr9)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[3];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_AddrA)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_AddrA)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[4];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+
+	spi_addr[0] = ((uint8_t*)&FTW_AddrB)[1];
+	spi_addr[1] = ((uint8_t*)&FTW_AddrB)[0];
+	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
+	value = ((uint8_t *)&ftw)[5];
+	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
+	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+
+	// Update registers
+	HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_RESET);
+
+}
+
 void send_freq(double fdds)
 {
 	uint64_t ftw;
@@ -461,6 +508,7 @@ void send_freq(double fdds)
 	}
 
 	ftw = round((fdds/f_s) * pow(2, 48));
+//	par.ftw.val = ftw;
 
 	spi_addr[0] = ((uint8_t*)&FTW_Addr6)[1];
 	spi_addr[1] = ((uint8_t*)&FTW_Addr6)[0];
@@ -552,12 +600,12 @@ void set_ref(double ref)
 		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
 
 //		// set N-divider for PLL
-//		spi_addr[0] = ((uint8_t*)&N_divider_Addr)[1];
-//		spi_addr[1] = ((uint8_t*)&N_divider_Addr)[0];
-//		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
-//		HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
-//		HAL_SPI_Transmit(&hspi4, (uint8_t*)&N_Divider, 1, 100);
-//		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+		spi_addr[0] = ((uint8_t*)&N_divider_Addr)[1];
+		spi_addr[1] = ((uint8_t*)&N_divider_Addr)[0];
+		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+		HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
+		HAL_SPI_Transmit(&hspi4, (uint8_t*)&N_Divider, 1, 100);
+		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
 
 	}else if(ref == 250.0 || ref == 1000.0){
 
@@ -619,6 +667,7 @@ double get_freq(){
 	((uint8_t *)&ftw)[5] = (unsigned int)spi_buf[0];
 	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
 
+	par.rftw.val = (double)ftw;
 	fDDS = (ftw/pow(2, 48)) * f_s;
 
 	get_state = 1;
@@ -690,7 +739,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  if (last_f != par.f.val){
 		  send_freq(par.f.val);
 		  last_f = par.f.val;
-		  par.rf.val = get_freq();
+//		  par.rf.val = get_freq();
 	  }
 
 	  if (last_cur != par.cur.val){
