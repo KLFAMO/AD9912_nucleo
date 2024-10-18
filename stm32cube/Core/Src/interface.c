@@ -217,7 +217,7 @@ int cmd_interpret(char *sin, char *ssend)
 
   if (sarg[0] == '?')
   {
-	  strcat(ssend, "*?*\n");
+//	  strcat(ssend, "*?*\n");
     if (strcmp(parg.type, "double") == 0){
     	//strcat(ssend, "*double*\n");
     	ftostr(stmp, *((double *)(parg.p)));
