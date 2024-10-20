@@ -46,6 +46,8 @@ typedef struct {
     value rf;
     value rftw;
     value cur;
+    value mode;
+    value dv;
     sded ded;
 } parameters;
 

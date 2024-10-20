@@ -438,12 +438,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : TTL1_IN_Pin */
+  GPIO_InitStruct.Pin = TTL1_IN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(TTL1_IN_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : LD2_Pin */
   GPIO_InitStruct.Pin = LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 }
 
@@ -674,6 +684,31 @@ double get_freq(){
 	return fDDS;
 }
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+
+	if (GPIO_Pin == GPIO_PIN_1){
+    	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+        uint32_t receivedBits = 0;
+        uint8_t bitIndex = 0;
+        for (bitIndex = 0; bitIndex < 32; bitIndex++){
+            uint8_t bit = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1);
+            receivedBits |= (bit << bitIndex);
+            for (volatile int i = 0; i < 10; i++);
+        }
+        par.dv.val = (double)receivedBits;
+    }
+
+    // check operation mode
+    if (par.mode.val == 0){
+        HAL_NVIC_EnableIRQ(TIM7_IRQn);
+        HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+    }
+    else{
+        HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+        HAL_NVIC_DisableIRQ(TIM7_IRQn);
+    }
+}
+
 
 /* USER CODE END 4 */
 
@@ -754,7 +789,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  }
 
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, RESET);
-    }
+  }
+
+  if (par.mode.val == 0){
+      HAL_NVIC_EnableIRQ(TIM7_IRQn);
+      HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+  }
+  else{
+      HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+      HAL_NVIC_DisableIRQ(TIM7_IRQn);
+  }
   /* USER CODE END Callback 1 */
 }
 
