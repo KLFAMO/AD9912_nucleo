@@ -117,6 +117,7 @@ void send_ftw(uint64_t ftw);
 void send_current(double idac);
 void set_ref(double ref);
 double get_freq(void);
+void HAL_Delay_us(uint16_t us);
 
 /* USER CODE END PFP */
 
@@ -683,6 +684,12 @@ double get_freq(){
 	get_state = 1;
 	return fDDS;
 }
+
+void HAL_Delay_us(uint16_t us)
+{
+	for (uint32_t i = 0; i < us * 9; i++) {}
+}
+
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
