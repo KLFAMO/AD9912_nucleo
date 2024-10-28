@@ -125,6 +125,7 @@ void send_current(double idac);
 void set_ref(double ref);
 double get_freq(void);
 void HAL_Delay_us(uint16_t us);
+void switch_mode();
 
 /* USER CODE END PFP */
 
@@ -190,7 +191,7 @@ int main(void)
   send_current(par.cur.val);
   par.rf.val = get_freq();
 
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+//  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 //  HAL_TIM_Base_Start_IT(&htim7);
 
@@ -205,7 +206,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  ethernetif_input(&gnetif);
 	  sys_check_timeouts();
-
+	  switch_mode();
 	}
   /* USER CODE END 3 */
 }
@@ -732,6 +733,19 @@ void HAL_Delay_us(uint16_t us)
 	for (uint32_t i = 0; i < us * 9; i++) {}
 }
 
+void switch_mode() {
+    static int last_mode = -1;
+    if (par.mode.val != last_mode) {
+        if (par.mode.val == 0) {
+            HAL_NVIC_EnableIRQ(TIM7_IRQn);
+            HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+        } else {
+            HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+            HAL_NVIC_DisableIRQ(TIM7_IRQn);
+        }
+        last_mode = par.mode.val;
+    }
+}
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
@@ -747,15 +761,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 		HAL_TIM_Base_Start_IT(&htim17);
     }
 
-    // check operation mode
-//    if (par.mode.val == 0){
-//        HAL_NVIC_EnableIRQ(TIM7_IRQn);
-//        HAL_NVIC_DisableIRQ(EXTI1_IRQn);
-//    }
-//    else{
-//        HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-//        HAL_NVIC_DisableIRQ(TIM7_IRQn);
-//    }
 }
 
 /* USER CODE END 4 */
@@ -817,26 +822,26 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
   /* USER CODE BEGIN Callback 1 */
   if (htim->Instance == TIM7) {
-//	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, SET);
-//
-//	  if (last_f != par.f.val){
-//		  send_freq(par.f.val);
-//		  last_f = par.f.val;
-////		  par.rf.val = get_freq();
-//	  }
-//
-//	  if (last_cur != par.cur.val){
-//		  send_current(par.cur.val);
-//		  last_cur = par.cur.val;
-//	  }
-//
-//	  if (par.ded.on.val == 1){
-//		  /* divide by 1e6 to convert to MHz,
-//		   * multiply by 1e3 to consider 1ms cycle */
-//		  par.f.val += par.ded.hzps.val*1e-9;
-//	  }
-//
-//	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, RESET);
+	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, SET);
+
+	  if (last_f != par.f.val){
+		  send_freq(par.f.val);
+		  last_f = par.f.val;
+//		  par.rf.val = get_freq();
+	  }
+
+	  if (last_cur != par.cur.val){
+		  send_current(par.cur.val);
+		  last_cur = par.cur.val;
+	  }
+
+	  if (par.ded.on.val == 1){
+		  /* divide by 1e6 to convert to MHz,
+		   * multiply by 1e3 to consider 1ms cycle */
+		  par.f.val += par.ded.hzps.val*1e-9;
+	  }
+
+	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, RESET);
   }
   if (htim->Instance == TIM17) {
 	  // Odbieramy bit co 20 µs
@@ -853,24 +858,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  bitIndex++;
 //		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);
 	  } else {
-		  // Gdy wszystkie bity są odebrane, zatrzymujemy timer
 		  HAL_TIM_Base_Stop_IT(&htim17);
-		  dv = 8388600 - (int32_t)dvui;
-		  par.dv.val = sign * dv; // Zastosuj znak do wartości liczbowej
-		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);  // Wyłączamy diodę
+		  dv = 8388606 - (int32_t)dvui;
+		  par.dv.val = sign * dv;
+		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);
 		  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_1);
 		  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 	  }
+
+//	  switch_mode();
   }
 
-//  if (par.mode.val == 0){
-//      HAL_NVIC_EnableIRQ(TIM7_IRQn);
-//      HAL_NVIC_DisableIRQ(EXTI1_IRQn);
-//  }
-//  else{
-//      HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-//      HAL_NVIC_DisableIRQ(TIM7_IRQn);
-//  }
+
   /* USER CODE END Callback 1 */
 }
 
