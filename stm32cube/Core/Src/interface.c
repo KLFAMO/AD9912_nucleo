@@ -115,7 +115,7 @@ void initInterface(void)
   par.cur = (value){.val = 31.7, .min = 8.6, .max = 31.7};
   par.ded.on = (value){.val = 0, .min = 0, .max = 1};
   par.ded.hzps = (value){.val = 0.0, .min = -10, .max = 10};
-  par.mode = (value){.val = 0, .min = 0, .max = 1};
+  par.mode = (value){.val = 1, .min = 0, .max = 1};
   par.dv = (value){.val = 0, .min = -1000000000000, .max = 1000000000000};
 }
 
