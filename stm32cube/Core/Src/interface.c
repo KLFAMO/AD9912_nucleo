@@ -41,6 +41,14 @@ pointer getPointer(pointer p, char *s)
       pout = (pointer){.p = (void *)&(ptmp->mode), .type = "value"};
     if (strcmp(s, "DV") == 0)
       pout = (pointer){.p = (void *)&(ptmp->dv), .type = "value"};
+    if (strcmp(s, "DVS") == 0)
+	  pout = (pointer){.p = (void *)&(ptmp->dvs), .type = "value"};
+    if (strcmp(s, "DVI") == 0)
+	  pout = (pointer){.p = (void *)&(ptmp->dvi), .type = "value"};
+    if (strcmp(s, "DVMAXF") == 0)
+	  pout = (pointer){.p = (void *)&(ptmp->dvmaxf), .type = "value"};
+    if (strcmp(s, "DVMINF") == 0)
+	  pout = (pointer){.p = (void *)&(ptmp->dvminf), .type = "value"};
   }
 
   if (strcmp(p.type, "ded") == 0)
@@ -115,8 +123,12 @@ void initInterface(void)
   par.cur = (value){.val = 31.7, .min = 8.6, .max = 31.7};
   par.ded.on = (value){.val = 0, .min = 0, .max = 1};
   par.ded.hzps = (value){.val = 0.0, .min = -10, .max = 10};
-  par.mode = (value){.val = 1, .min = 0, .max = 1};
+  par.mode = (value){.val = 0, .min = 0, .max = 1};
   par.dv = (value){.val = 0, .min = -1000000000000, .max = 1000000000000};
+  par.dvs = (value){.val = 2e-6, .min = 0, .max = 1};
+  par.dvi = (value){.val = 0, .min = -1e9, .max = 1e9};
+  par.dvmaxf = (value){.val = 150, .min = 0, .max = 400};
+  par.dvminf = (value){.val = 50, .min = 0, .max = 400};
 }
 
 /*------------------------*/

@@ -48,6 +48,10 @@ typedef struct {
     value cur;
     value mode;
     value dv;
+    value dvs;
+    value dvi;
+    value dvmaxf;
+    value dvminf;
     sded ded;
 } parameters;
 

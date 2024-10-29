@@ -860,7 +860,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  } else {
 		  HAL_TIM_Base_Stop_IT(&htim17);
 		  dv = 8388606 - (int32_t)dvui;
-		  par.dv.val = sign * dv;
+		  par.dv.val = sign * dv * par.dvs.val;
+
+		  // correct dds
+		  par.f.val += par.dv.val * par.dvi.val;
+		  if (par.f.val > par.dvmaxf.val){
+			  par.f.val = par.dvmaxf.val;
+		  }
+		  if (par.f.val < par.dvminf.val){
+			  par.f.val = par.dvminf.val;
+		  }
+		  send_freq(par.f.val);
+
+		  // end
 		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);
 		  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_1);
 		  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
