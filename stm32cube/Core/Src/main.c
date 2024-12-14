@@ -106,6 +106,7 @@ int bitIndex = 0;
 int sign = 1;
 int32_t dv = 0;
 uint32_t dvui = 0;
+int last_mode = -1;
 
 /* USER CODE END PV */
 
@@ -190,6 +191,8 @@ int main(void)
   send_freq(par.f.val);
   send_current(par.cur.val);
   par.rf.val = get_freq();
+  HAL_NVIC_EnableIRQ(TIM7_IRQn);
+  HAL_NVIC_DisableIRQ(EXTI1_IRQn);
 
 //  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
@@ -734,7 +737,6 @@ void HAL_Delay_us(uint16_t us)
 }
 
 void switch_mode() {
-    static int last_mode = -1;
     if (par.mode.val != last_mode) {
         if (par.mode.val == 0) {
             HAL_NVIC_EnableIRQ(TIM7_IRQn);
@@ -863,14 +865,27 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  par.dv.val = sign * dv * par.dvs.val;
 
 		  // correct dds
-		  par.f.val += par.dv.val * par.dvi.val;
-		  if (par.f.val > par.dvmaxf.val){
-			  par.f.val = par.dvmaxf.val;
+      if (par.dvrst.val > 0.1){
+        par.dvrst.val = 0;
+        par.adv.val = 0;
+      }
+      
+      setParam(&par.adv, par.adv.val+par.dv.val);
+      setParam(&par.ddv, par.dv.val - par.dv_last.val);
+		  par.fm.val = par.f.val + 
+                   par.dv.val * par.dvp.val + 
+                   par.adv.val * par.dvi.val +
+                   par.ddv.val * par.dvd.val;
+      par.dv_last.val = par.dv.val;
+      par.dvmaxf.val = par.f.val + par.dvrange.val;
+      par.dvminf.val = par.f.val - par.dvrange.val;
+		  if (par.fm.val > par.dvmaxf.val){
+			  par.fm.val = par.dvmaxf.val;
 		  }
-		  if (par.f.val < par.dvminf.val){
-			  par.f.val = par.dvminf.val;
+		  if (par.fm.val < par.dvminf.val){
+			  par.fm.val = par.dvminf.val;
 		  }
-		  send_freq(par.f.val);
+		  send_freq(par.fm.val);
 
 		  // end
 		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);

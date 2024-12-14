@@ -42,13 +42,21 @@ pointer getPointer(pointer p, char *s)
     if (strcmp(s, "DV") == 0)
       pout = (pointer){.p = (void *)&(ptmp->dv), .type = "value"};
     if (strcmp(s, "DVS") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->dvs), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->dvs), .type = "value"};
     if (strcmp(s, "DVI") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->dvi), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->dvi), .type = "value"};
+    if (strcmp(s, "DVP") == 0)
+	    pout = (pointer){.p = (void *)&(ptmp->dvp), .type = "value"};
+    if (strcmp(s, "DVD") == 0)
+	    pout = (pointer){.p = (void *)&(ptmp->dvd), .type = "value"};
     if (strcmp(s, "DVMAXF") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->dvmaxf), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->dvmaxf), .type = "value"};
     if (strcmp(s, "DVMINF") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->dvminf), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->dvminf), .type = "value"};
+    if (strcmp(s, "DVRANGE") == 0)
+	    pout = (pointer){.p = (void *)&(ptmp->dvrange), .type = "value"};
+    if (strcmp(s, "DVRST") == 0)
+	    pout = (pointer){.p = (void *)&(ptmp->dvrst), .type = "value"};
   }
 
   if (strcmp(p.type, "ded") == 0)
@@ -117,6 +125,7 @@ void setParam(value *p, double val)
 void initInterface(void)
 {
   par.f = (value){.val = 0, .min = 0, .max = 400};
+  par.fm = (value){.val = 0, .min = 0, .max = 400};
   par.ftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
   par.rf = (value){.val = 0, .min = 0, .max = 400};
   par.rftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
@@ -125,10 +134,17 @@ void initInterface(void)
   par.ded.hzps = (value){.val = 0.0, .min = -10, .max = 10};
   par.mode = (value){.val = 0, .min = 0, .max = 1};
   par.dv = (value){.val = 0, .min = -1000000000000, .max = 1000000000000};
+  par.dv_last = (value){.val = 0, .min = -1000000000000, .max = 1000000000000};
+  par.adv = (value){.val = 0, .min = -10000000000, .max = 10000000000};
+  par.ddv = (value){.val = 0, .min = -0.5, .max = 0.5};
   par.dvs = (value){.val = 2e-6, .min = 0, .max = 1};
   par.dvi = (value){.val = 0, .min = -1e9, .max = 1e9};
+  par.dvp = (value){.val = 0, .min = -1e9, .max = 1e9};
+  par.dvd = (value){.val = 0, .min = -1e9, .max = 1e9};
   par.dvmaxf = (value){.val = 150, .min = 0, .max = 400};
-  par.dvminf = (value){.val = 50, .min = 0, .max = 400};
+  par.dvminf = (value){.val = 10, .min = 0, .max = 400};
+  par.dvrange = (value){.val = 0.01, .min = 0, .max = 10};
+  par.dvrst = (value){.val = 0, .min = 0, .max = 1};
 }
 
 /*------------------------*/

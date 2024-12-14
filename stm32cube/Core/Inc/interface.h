@@ -42,16 +42,24 @@ typedef struct{
 
 typedef struct {
     value f;
+    value fm;
     value ftw;
     value rf;
     value rftw;
     value cur;
     value mode;
     value dv;
+    value dv_last;
+    value adv;
+    value ddv;
     value dvs;
     value dvi;
+    value dvp;
+    value dvd;
     value dvmaxf;
     value dvminf;
+    value dvrange;
+    value dvrst;
     sded ded;
 } parameters;
 
