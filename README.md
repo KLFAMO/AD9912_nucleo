@@ -48,3 +48,21 @@ Max value is 31.7. With this parameter it is possible to change amplitude betwee
 `DED:HZPS`: dedrift speed in Hz/s
 
 Dedrift is applied every 1ms. Reference clock is internal oscillator of microcontroller (there will be some callibration mechanism added in the future).
+
+## DDS with TTL-voltage feedback
+
+DDS receives voltage V in volts. Loop formula: F = F + V * DVI, where F is in MHz.
+
+`MODE` : 0 - manual dds (with dedrift), 1- feedback loop TTL-voltage
+
+`DVP`: servo P
+
+`DVI`: servo I
+
+`DVI`: servo D
+
+`DVRANGE`: lock range ( `DVMAXF`-`DVMINF`). Middle value is `F`.
+
+`DVMAXF` : max frequency during lock calculated based on `DVRANGE` and `F` (`F`+0.5x`DVRANGE`)
+
+`DVMINF` : min frequency during lock calculated based on `DVRANGE` and `F` (`F`-0.5x`DVRANGE`)
