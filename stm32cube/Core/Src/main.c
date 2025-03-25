@@ -39,6 +39,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 //#define PORT	5015          <----
+#define FLASH_PARAM_START_ADDR  ((uint32_t)0x081E0000)  // bank 2, sektor 7
+#define FLASH_WORD_SIZE        (32)  // Flash word = 256-bit = 32 bytes
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -95,6 +97,7 @@ double f_s = 1000.0;	// MHz of sysclk
 double f_DDS = 0.0;	// MHz of initial frequency
 double f_ref = 100.0;	// MHz of reference frequency
 double last_f = 0;
+double cur_f = 0; // current frequency
 double last_cur = 0;
 
 const uint16_t DAC_Current_AddrB = 0x040B;
@@ -107,6 +110,49 @@ int sign = 1;
 int32_t dv = 0;
 uint32_t dvui = 0;
 int last_mode = -1;
+
+void Flash_Write_Params(uint32_t address, parameters *data) {
+  HAL_FLASH_Unlock();  // Odblokowanie pamięci flash
+
+  FLASH_EraseInitTypeDef eraseInitStruct;
+  uint32_t sectorError;
+
+  // Kasowanie sektora przed zapisem
+  eraseInitStruct.TypeErase    = FLASH_TYPEERASE_SECTORS;
+  eraseInitStruct.Banks        = FLASH_BANK_2;  // **Bank 2**
+  eraseInitStruct.Sector       = FLASH_SECTOR_7;  // **Sektor 7**
+  eraseInitStruct.NbSectors    = 1;
+  eraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+
+  if (HAL_FLASHEx_Erase(&eraseInitStruct, &sectorError) != HAL_OK) {
+      HAL_FLASH_Lock();
+      return;  // Błąd kasowania
+  }
+  
+  uint64_t *data_ptr = (uint64_t*)data;
+  uint64_t flash_word[4];
+  for (uint32_t i = 0; i < sizeof(parameters) / 8; i += 4) {
+      flash_word[0] = (i < sizeof(parameters) / 8) ? data_ptr[i] : 0xFFFFFFFFFFFFFFFF;
+      flash_word[1] = (i + 1 < sizeof(parameters) / 8) ? data_ptr[i + 1] : 0xFFFFFFFFFFFFFFFF;
+      flash_word[2] = (i + 2 < sizeof(parameters) / 8) ? data_ptr[i + 2] : 0xFFFFFFFFFFFFFFFF;
+      flash_word[3] = (i + 3 < sizeof(parameters) / 8) ? data_ptr[i + 3] : 0xFFFFFFFFFFFFFFFF;
+
+      if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, address + i * 8, (uint64_t)flash_word) != HAL_OK) {
+          HAL_FLASH_Lock();
+          return;  // Błąd zapisu
+      }
+  }
+
+  HAL_FLASH_Lock();  // Zablokowanie pamięci flash
+}
+
+void Flash_Read_Params(uint32_t address, parameters *data) {
+  memcpy(data, (void*)address, sizeof(parameters));  // Odczytaj całą strukturę
+}
+
+uint32_t Flash_Read_Version(uint32_t address) {
+  return *(volatile double*)address;  // Odczytaj pierwsze 4 bajty
+}
 
 /* USER CODE END PV */
 
@@ -187,6 +233,14 @@ int main(void)
   tcp_server_init();
   initInterface();
 
+  // read par from flash
+  if (par.version != Flash_Read_Version(FLASH_PARAM_START_ADDR)){
+    Flash_Write_Params(FLASH_PARAM_START_ADDR, &par);
+  }
+  else{
+    Flash_Read_Params(FLASH_PARAM_START_ADDR, &par);
+  }
+
   set_ref(100.0);
   send_freq(par.f.val);
   send_current(par.cur.val);
@@ -210,6 +264,15 @@ int main(void)
 	  ethernetif_input(&gnetif);
 	  sys_check_timeouts();
 	  switch_mode();
+
+    if (par.save.val == 1){
+      par.save.val = 0;
+      Flash_Write_Params(FLASH_PARAM_START_ADDR, &par);
+    }
+    if (par.load.val == 1){
+      par.load.val = 0;
+      Flash_Read_Params(FLASH_PARAM_START_ADDR, &par);
+    }
 	}
   /* USER CODE END 3 */
 }
@@ -860,32 +923,57 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  bitIndex++;
 //		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);
 	  } else {
+      // after reading last bit start cycle porcedure
+
 		  HAL_TIM_Base_Stop_IT(&htim17);
 		  dv = 8388606 - (int32_t)dvui;
 		  par.dv.val = sign * dv * par.dvs.val;
 
-		  // correct dds
-      if (par.dvrst.val > 0.1){
+      // standard operations like in normal mode
+      //--------------------------------------
+
+      if (last_f != par.f.val + par.fm.val){
+        send_freq(par.f.val + par.fm.val);
+        last_f = par.f.val + par.fm.val;
+      }
+  
+      if (last_cur != par.cur.val){
+        send_current(par.cur.val);
+        last_cur = par.cur.val;
+      }
+  
+      if (par.ded.on.val == 1){
+        /* divide by 1e6 to convert to MHz,
+         * multiply by 1e3 to consider 1ms cycle */
+        par.f.val += par.ded.hzps.val*1e-9;
+      }
+      //--------------------------------------
+
+		  // correct dds from feedback
+      if (par.dvrst.val > 0.1){ // reset correction ?
         par.dvrst.val = 0;
-        par.adv.val = 0;
+        par.adv.val = 0; // reset accumulated dv
+        par.fm.val = 0; // reset modulation frequency
       }
       
       setParam(&par.adv, par.adv.val+par.dv.val);
       setParam(&par.ddv, par.dv.val - par.dv_last.val);
-		  par.fm.val = par.f.val + 
+		  par.fm.val = 0 + 
                    par.dv.val * par.dvp.val + 
                    par.adv.val * par.dvi.val +
                    par.ddv.val * par.dvd.val;
       par.dv_last.val = par.dv.val;
-      par.dvmaxf.val = par.f.val + par.dvrange.val;
-      par.dvminf.val = par.f.val - par.dvrange.val;
-		  if (par.fm.val > par.dvmaxf.val){
-			  par.fm.val = par.dvmaxf.val;
+
+      // check if modulation frequency is in range
+      if (par.fm.val > par.dvrange.val){
+			  par.fm.val = par.dvrange.val;
 		  }
-		  if (par.fm.val < par.dvminf.val){
-			  par.fm.val = par.dvminf.val;
+		  if (par.fm.val < - par.dvrange.val){
+			  par.fm.val = - par.dvrange.val;
 		  }
-		  send_freq(par.fm.val);
+
+      // to change
+		  // send_freq(par.fm.val);
 
 		  // end
 		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);

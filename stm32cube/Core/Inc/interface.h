@@ -41,6 +41,10 @@ typedef struct{
 }sded;
 
 typedef struct {
+    double version;
+    value save;
+    value load;
+    value ver;
     value f;
     value fm;
     value ftw;
@@ -48,18 +52,18 @@ typedef struct {
     value rftw;
     value cur;
     value mode;
-    value dv;
+    value dv; // received value
     value dv_last;
-    value adv;
+    value adv; // accumulated dv
     value ddv;
     value dvs;
-    value dvi;
-    value dvp;
-    value dvd;
+    value dvi; // integrating factor
+    value dvp; // proportional factor
+    value dvd; // derivative factor
     value dvmaxf;
     value dvminf;
     value dvrange;
-    value dvrst;
+    value dvrst;  // reset correction?
     sded ded;
 } parameters;
 

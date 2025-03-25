@@ -25,78 +25,84 @@ pointer getPointer(pointer p, char *s)
   if (strcmp(p.type, "parameters") == 0)
   {
     parameters *ptmp = (parameters *)p.p;
-    if (strcmp(s, "F") == 0)
+    if (strcasecmp(s, "F") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->f), .type = "value"};
-    if (strcmp(s, "FTW") == 0)
+    if (strcasecmp(s, "FTW") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->ftw), .type = "value"};
-    if (strcmp(s, "RF") == 0)
+    if (strcasecmp(s, "RF") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->rf), .type = "value"};
-    if (strcmp(s, "RFTW") == 0)
+    if (strcasecmp(s, "RFTW") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->rftw), .type = "value"};
-    if (strcmp(s, "CUR") == 0)
+    if (strcasecmp(s, "CUR") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->cur), .type = "value"};
-    if (strcmp(s, "DED") == 0)
+    if (strcasecmp(s, "DED") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->ded), .type = "ded"};
-    if (strcmp(s, "MODE") == 0)
+    if (strcasecmp(s, "MODE") == 0)
       pout = (pointer){.p = (void *)&(ptmp->mode), .type = "value"};
-    if (strcmp(s, "DV") == 0)
+    if (strcasecmp(s, "DV") == 0)
       pout = (pointer){.p = (void *)&(ptmp->dv), .type = "value"};
-    if (strcmp(s, "DVS") == 0)
+    if (strcasecmp(s, "DVS") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvs), .type = "value"};
-    if (strcmp(s, "DVI") == 0)
+    if (strcasecmp(s, "DVI") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvi), .type = "value"};
-    if (strcmp(s, "DVP") == 0)
+    if (strcasecmp(s, "DVP") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvp), .type = "value"};
-    if (strcmp(s, "DVD") == 0)
+    if (strcasecmp(s, "DVD") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvd), .type = "value"};
-    if (strcmp(s, "DVMAXF") == 0)
+    if (strcasecmp(s, "DVMAXF") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvmaxf), .type = "value"};
-    if (strcmp(s, "DVMINF") == 0)
+    if (strcasecmp(s, "DVMINF") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvminf), .type = "value"};
-    if (strcmp(s, "DVRANGE") == 0)
+    if (strcasecmp(s, "DVRANGE") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvrange), .type = "value"};
-    if (strcmp(s, "DVRST") == 0)
+    if (strcasecmp(s, "DVRST") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvrst), .type = "value"};
+    if (strcasecmp(s, "SAVE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->save), .type = "value"};
+    if (strcasecmp(s, "LOAD") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->load), .type = "value"};
+    if (strcasecmp(s, "VER") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->ver), .type = "value"};
   }
 
   if (strcmp(p.type, "ded") == 0)
   {
     sded *ptmp = (sded *)p.p;
-    if (strcmp(s, "ON") == 0)
+    if (strcasecmp(s, "ON") == 0)
       pout = (pointer){.p = (void *)&(ptmp->on), .type = "value"};
-    if (strcmp(s, "HZPS") == 0)
+    if (strcasecmp(s, "HZPS") == 0)
       pout = (pointer){.p = (void *)&(ptmp->hzps), .type = "value"};
   }
 
   if (strcmp(p.type, "value") == 0)
   {
     value *ptmp = (value *)p.p;
-    if (strcmp(s, "VAL") == 0)
+    if (strcasecmp(s, "VAL") == 0)
       pout = (pointer){.p = (void *)&(ptmp->val), .type = "double"};
-    if (strcmp(s, "MIN") == 0)
+    if (strcasecmp(s, "MIN") == 0)
       pout = (pointer){.p = (void *)&(ptmp->min), .type = "double"};
-    if (strcmp(s, "MAX") == 0)
+    if (strcasecmp(s, "MAX") == 0)
       pout = (pointer){.p = (void *)&(ptmp->max), .type = "double"};
-    if (strcmp(s, "TABON") == 0)
+    if (strcasecmp(s, "TABON") == 0)
       pout = (pointer){.p = (void *)&(ptmp->tabon), .type = "ison"};
-    if (strcmp(s, "MES") == 0)
+    if (strcasecmp(s, "MES") == 0)
       pout = (pointer){.p = (void *)&(ptmp->mes), .type = "mestab"};
   }
 
   if (strcmp(p.type, "mestab") == 0)
   {
     mestab *ptmp = (mestab *)p.p;
-    if (strcmp(s, "SIZE") == 0)
+    if (strcasecmp(s, "SIZE") == 0)
       pout = (pointer){.p = (void *)&(ptmp->tabsize), .type = "int"};
-    if (strcmp(s, "COUNT") == 0)
+    if (strcasecmp(s, "COUNT") == 0)
       pout = (pointer){.p = (void *)&(ptmp->tabcount), .type = "int"};
-    if (strcmp(s, "POS") == 0)
+    if (strcasecmp(s, "POS") == 0)
       pout = (pointer){.p = (void *)&(ptmp->tabpos), .type = "int"};
   }
   if (strcmp(p.type, "ison") == 0)
   {
     ison *ptmp = (ison *)p.p;
-    if (strcmp(s, "IS") == 0)
+    if (strcasecmp(s, "IS") == 0)
       pout = (pointer){.p = (void *)&(ptmp->is), .type = "int"};
   }
   return pout;
@@ -124,6 +130,8 @@ void setParam(value *p, double val)
 
 void initInterface(void)
 {
+  par.version = 1; // version of parameters structure, increment if structure changes
+  par.ver = (value){.val = 1, .min = 0, .max = 100};
   par.f = (value){.val = 0, .min = 0, .max = 400};
   par.fm = (value){.val = 0, .min = 0, .max = 400};
   par.ftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
@@ -132,7 +140,7 @@ void initInterface(void)
   par.cur = (value){.val = 31.7, .min = 8.6, .max = 31.7};
   par.ded.on = (value){.val = 0, .min = 0, .max = 1};
   par.ded.hzps = (value){.val = 0.0, .min = -10, .max = 10};
-  par.mode = (value){.val = 0, .min = 0, .max = 1};
+  par.mode = (value){.val = 1, .min = 0, .max = 1};
   par.dv = (value){.val = 0, .min = -1000000000000, .max = 1000000000000};
   par.dv_last = (value){.val = 0, .min = -1000000000000, .max = 1000000000000};
   par.adv = (value){.val = 0, .min = -10000000000, .max = 10000000000};
@@ -145,6 +153,9 @@ void initInterface(void)
   par.dvminf = (value){.val = 10, .min = 0, .max = 400};
   par.dvrange = (value){.val = 0.01, .min = 0, .max = 10};
   par.dvrst = (value){.val = 0, .min = 0, .max = 1};
+
+  par.save = (value){.val = 0, .min = 0, .max = 1};
+  par.load = (value){.val = 0, .min = 0, .max = 1};
 }
 
 /*------------------------*/
