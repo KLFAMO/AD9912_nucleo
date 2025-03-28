@@ -932,9 +932,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       // standard operations like in normal mode
       //--------------------------------------
 
-      if (last_f != par.f.val + par.fm.val){
-        send_freq(par.f.val + par.fm.val);
-        last_f = par.f.val + par.fm.val;
+      if (last_f != par.f.val + par.pll.fm.val + par.pll.fm.val){
+        send_freq(par.f.val + par.pll.fm.val + par.pll.fm.val);
+        last_f = par.f.val + par.pll.fm.val + par.pll.fm.val;
       }
   
       if (last_cur != par.cur.val){
@@ -950,30 +950,81 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       //--------------------------------------
 
 		  // correct dds from feedback
-      if (par.dvrst.val > 0.1){ // reset correction ?
-        par.dvrst.val = 0;
-        par.adv.val = 0; // reset accumulated dv
-        par.fm.val = 0; // reset modulation frequency
+
+      // pll - phlock loop turned on -----------------------
+      if (par.pll.on.val != par.pll.laston.val){
+        par.pll.rst.val = 1;
+      }
+      par.pll.laston.val = par.pll.on.val;
+
+      if (par.pll.rst.val > 0.1){ // reset correction ?
+        par.pll.rst.val = 0;
+        par.pll.ae.val = 0; // reset accumulated dv
+        par.pll.fm.val = 0; // reset modulation frequency
       }
       
-      setParam(&par.adv, par.adv.val+par.dv.val);
-      setParam(&par.ddv, par.dv.val - par.dv_last.val);
-		  par.fm.val = 0 + 
-                   par.dv.val * par.dvp.val + 
-                   par.adv.val * par.dvi.val +
-                   par.ddv.val * par.dvd.val;
-      par.dv_last.val = par.dv.val;
+      if (par.pll.on.val == 1){
+        par.pll.ae.max = par.pll.aer.val;
+        par.pll.ae.min = -par.pll.aer.val;
+        par.pll.de.max = par.pll.der.val;
+        par.pll.de.min = -par.pll.der.val;
+        par.pll.fm.max = par.pll.range.val;
+        par.pll.fm.min = -par.pll.range.val;
+        setParam(&par.pll.e, par.dv.val);
+        setParam(&par.pll.ae, par.pll.ae.val+par.pll.e.val);
+        setParam(&par.pll.de, par.pll.e.val - par.pll.laste.val);
+        setParam(&par.pll.laste, par.pll.e.val);
+        setParam(&par.pll.fm,
+                    par.pll.e.val * par.pll.p.val + 
+                    par.pll.ae.val * 1e-3 * par.pll.i.val +
+                    par.pll.de.val * par.pll.d.val
+        );
+      }
 
-      // check if modulation frequency is in range
-      if (par.fm.val > par.dvrange.val){
-			  par.fm.val = par.dvrange.val;
-		  }
-		  if (par.fm.val < - par.dvrange.val){
-			  par.fm.val = - par.dvrange.val;
-		  }
+      // frequency lock loop turned on -----------------------
+      if (par.fll.on.val != par.fll.laston.val){
+        par.fll.rst.val = 1;
+      }
+      par.fll.laston.val = par.fll.on.val;
 
-      // to change
-		  // send_freq(par.fm.val);
+      if (par.fll.rst.val > 0.1){ // reset correction ?
+        par.fll.rst.val = 0;
+        par.fll.ae.val = 0; // reset accumulated dv
+        par.fll.fm.val = 0; // reset modulation frequency
+      }
+      
+      if (par.fll.on.val == 1){
+        par.fll.ae.max = par.fll.aer.val;
+        par.fll.ae.min = -par.fll.aer.val;
+        par.fll.de.max = par.fll.der.val;
+        par.fll.de.min = -par.fll.der.val;
+        par.fll.fm.max = par.fll.range.val;
+        par.fll.fm.min = -par.fll.range.val;
+
+        setParam(&par.fll.e, par.fll.fc.val - par.fll.fcset.val); // Hz
+        setParam(&par.fll.ae, par.fll.ae.val+par.fll.e.val);
+        setParam(&par.fll.de, par.fll.e.val - par.fll.laste.val);
+        setParam(&par.fll.laste, par.fll.e.val);
+
+        if (
+          fabs(par.fll.e.val) > par.fll.emint.val &&
+          fabs(par.fll.e.val) < par.fll.emaxt.val
+        ){  // use fll
+          if (par.apf.val == 1) setParam(&par.pll.on, 0);
+          setParam(
+            &par.fll.fm,
+            (
+              par.fll.e.val * par.fll.p.val + 
+              par.fll.ae.val * par.fll.i.val +
+              par.fll.de.val * par.fll.d.val
+            ) * 1e-6 // fc in Hz and fm in MHz
+          );
+        }
+        
+        // use pll if aouto switch pll-fll
+        if (par.apf.val == 1 && fabs(par.fll.e.val) < par.fll.emint.val)
+            setParam(&par.pll.on, 1);
+      }
 
 		  // end
 		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);

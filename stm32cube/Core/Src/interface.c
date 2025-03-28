@@ -26,37 +26,29 @@ pointer getPointer(pointer p, char *s)
   {
     parameters *ptmp = (parameters *)p.p;
     if (strcasecmp(s, "F") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->f), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->f), .type = "value"};
     if (strcasecmp(s, "FTW") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->ftw), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->ftw), .type = "value"};
     if (strcasecmp(s, "RF") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->rf), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->rf), .type = "value"};
     if (strcasecmp(s, "RFTW") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->rftw), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->rftw), .type = "value"};
     if (strcasecmp(s, "CUR") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->cur), .type = "value"};
+	    pout = (pointer){.p = (void *)&(ptmp->cur), .type = "value"};
     if (strcasecmp(s, "DED") == 0)
-	  pout = (pointer){.p = (void *)&(ptmp->ded), .type = "ded"};
+	    pout = (pointer){.p = (void *)&(ptmp->ded), .type = "ded"};
+    if (strcasecmp(s, "PLL") == 0)
+	    pout = (pointer){.p = (void *)&(ptmp->pll), .type = "pll"};
+    if (strcasecmp(s, "FLL") == 0)
+	    pout = (pointer){.p = (void *)&(ptmp->fll), .type = "fll"};
     if (strcasecmp(s, "MODE") == 0)
       pout = (pointer){.p = (void *)&(ptmp->mode), .type = "value"};
+    if (strcasecmp(s, "APF") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->apf), .type = "value"};
     if (strcasecmp(s, "DV") == 0)
       pout = (pointer){.p = (void *)&(ptmp->dv), .type = "value"};
     if (strcasecmp(s, "DVS") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->dvs), .type = "value"};
-    if (strcasecmp(s, "DVI") == 0)
-	    pout = (pointer){.p = (void *)&(ptmp->dvi), .type = "value"};
-    if (strcasecmp(s, "DVP") == 0)
-	    pout = (pointer){.p = (void *)&(ptmp->dvp), .type = "value"};
-    if (strcasecmp(s, "DVD") == 0)
-	    pout = (pointer){.p = (void *)&(ptmp->dvd), .type = "value"};
-    if (strcasecmp(s, "DVMAXF") == 0)
-	    pout = (pointer){.p = (void *)&(ptmp->dvmaxf), .type = "value"};
-    if (strcasecmp(s, "DVMINF") == 0)
-	    pout = (pointer){.p = (void *)&(ptmp->dvminf), .type = "value"};
-    if (strcasecmp(s, "DVRANGE") == 0)
-	    pout = (pointer){.p = (void *)&(ptmp->dvrange), .type = "value"};
-    if (strcasecmp(s, "DVRST") == 0)
-	    pout = (pointer){.p = (void *)&(ptmp->dvrst), .type = "value"};
     if (strcasecmp(s, "SAVE") == 0)
       pout = (pointer){.p = (void *)&(ptmp->save), .type = "value"};
     if (strcasecmp(s, "LOAD") == 0)
@@ -72,6 +64,80 @@ pointer getPointer(pointer p, char *s)
       pout = (pointer){.p = (void *)&(ptmp->on), .type = "value"};
     if (strcasecmp(s, "HZPS") == 0)
       pout = (pointer){.p = (void *)&(ptmp->hzps), .type = "value"};
+  }
+
+  if (strcmp(p.type, "pll") == 0)
+  {
+    spll *ptmp = (spll *)p.p;
+    if (strcasecmp(s, "ON") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->on), .type = "value"};
+    if (strcasecmp(s, "LASTON") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->laston), .type = "value"};
+    if (strcasecmp(s, "RST") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->rst), .type = "value"};
+    if (strcasecmp(s, "RANGE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->range), .type = "value"};
+    if (strcasecmp(s, "FM") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->fm), .type = "value"};
+    if (strcasecmp(s, "P") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->p), .type = "value"};
+    if (strcasecmp(s, "I") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->i), .type = "value"};
+    if (strcasecmp(s, "D") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->d), .type = "value"};
+    if (strcasecmp(s, "E") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->e), .type = "value"};
+    if (strcasecmp(s, "LASTE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->laste), .type = "value"};
+    if (strcasecmp(s, "AE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->ae), .type = "value"};
+    if (strcasecmp(s, "AER") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->aer), .type = "value"};
+    if (strcasecmp(s, "DE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->de), .type = "value"};
+    if (strcasecmp(s, "DER") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->der), .type = "value"};
+  }
+
+  if (strcmp(p.type, "fll") == 0)
+  {
+    sfll *ptmp = (sfll *)p.p;
+    if (strcasecmp(s, "ON") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->on), .type = "value"};
+    if (strcasecmp(s, "LASTON") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->laston), .type = "value"};
+    if (strcasecmp(s, "RST") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->rst), .type = "value"};
+    if (strcasecmp(s, "RANGE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->range), .type = "value"};
+    if (strcasecmp(s, "FM") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->fm), .type = "value"};
+    if (strcasecmp(s, "P") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->p), .type = "value"};
+    if (strcasecmp(s, "I") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->i), .type = "value"};
+    if (strcasecmp(s, "D") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->d), .type = "value"};
+    if (strcasecmp(s, "E") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->e), .type = "value"};
+    if (strcasecmp(s, "LASTE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->laste), .type = "value"};
+    if (strcasecmp(s, "AE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->ae), .type = "value"};
+    if (strcasecmp(s, "AER") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->aer), .type = "value"};
+    if (strcasecmp(s, "DE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->de), .type = "value"};
+    if (strcasecmp(s, "DER") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->der), .type = "value"};
+    if (strcasecmp(s, "FCSET") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->fcset), .type = "value"};
+    if (strcasecmp(s, "FC") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->fc), .type = "value"};
+    if (strcasecmp(s, "EMINT") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->emint), .type = "value"};
+    if (strcasecmp(s, "EMAXT") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->emaxt), .type = "value"};
   }
 
   if (strcmp(p.type, "value") == 0)
@@ -130,29 +196,55 @@ void setParam(value *p, double val)
 
 void initInterface(void)
 {
-  par.version = 1; // version of parameters structure, increment if structure changes
+  par.version = 2; // version of parameters structure, increment if structure changes
   par.ver = (value){.val = 1, .min = 0, .max = 100};
   par.f = (value){.val = 0, .min = 0, .max = 400};
-  par.fm = (value){.val = 0, .min = 0, .max = 400};
   par.ftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
   par.rf = (value){.val = 0, .min = 0, .max = 400};
   par.rftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
   par.cur = (value){.val = 31.7, .min = 8.6, .max = 31.7};
+  par.mode = (value){.val = 1, .min = 0, .max = 1};
+  par.apf = (value){.val = 0, .min = 0, .max = 1};
+  par.dv = (value){.val = 0, .min = -10, .max = 10};
+  par.dv_last = (value){.val = 0, .min = -10, .max = 10};
+  par.dvs = (value){.val = 2e-6, .min = 0, .max = 1};
+
   par.ded.on = (value){.val = 0, .min = 0, .max = 1};
   par.ded.hzps = (value){.val = 0.0, .min = -10, .max = 10};
-  par.mode = (value){.val = 1, .min = 0, .max = 1};
-  par.dv = (value){.val = 0, .min = -1000000000000, .max = 1000000000000};
-  par.dv_last = (value){.val = 0, .min = -1000000000000, .max = 1000000000000};
-  par.adv = (value){.val = 0, .min = -10000000000, .max = 10000000000};
-  par.ddv = (value){.val = 0, .min = -0.5, .max = 0.5};
-  par.dvs = (value){.val = 2e-6, .min = 0, .max = 1};
-  par.dvi = (value){.val = 0, .min = -1e9, .max = 1e9};
-  par.dvp = (value){.val = 0, .min = -1e9, .max = 1e9};
-  par.dvd = (value){.val = 0, .min = -1e9, .max = 1e9};
-  par.dvmaxf = (value){.val = 150, .min = 0, .max = 400};
-  par.dvminf = (value){.val = 10, .min = 0, .max = 400};
-  par.dvrange = (value){.val = 0.01, .min = 0, .max = 10};
-  par.dvrst = (value){.val = 0, .min = 0, .max = 1};
+
+  par.pll.on = (value){.val = 0, .min = 0, .max = 1};
+  par.pll.laston = (value){.val = 0, .min = 0, .max = 1};
+  par.pll.rst = (value){.val = 0, .min = 0, .max = 1};
+  par.pll.range = (value){.val = 0.01, .min = 0, .max = 1};
+  par.pll.fm = (value){.val = 0, .min = -1, .max = 1};
+  par.pll.p = (value){.val = 0, .min = -1000, .max = 1000};
+  par.pll.i = (value){.val = 0, .min = -1000, .max = 1000};
+  par.pll.d = (value){.val = 0, .min = -1000, .max = 1000};
+  par.pll.e = (value){.val = 0, .min = -10, .max = 10};
+  par.pll.laste = (value){.val = 0, .min = -10, .max = 10};
+  par.pll.ae = (value){.val = 0, .min = -1000000000, .max = 1000000000};
+  par.pll.aer = (value){.val = 0, .min = 0, .max = 10000000};
+  par.pll.de = (value){.val = 0, .min = -20, .max = 20};
+  par.pll.der = (value){.val = 0, .min = 0, .max = 1};
+
+  par.fll.on = (value){.val = 0, .min = 0, .max = 1};
+  par.fll.laston = (value){.val = 0, .min = 0, .max = 1};
+  par.fll.rst = (value){.val = 0, .min = 0, .max = 1};
+  par.fll.range = (value){.val = 0.1, .min = 0, .max = 1};
+  par.fll.fm = (value){.val = 0, .min = -1, .max = 1};
+  par.fll.p = (value){.val = 0, .min = -1000, .max = 1000};
+  par.fll.i = (value){.val = 0, .min = -1000, .max = 1000};
+  par.fll.d = (value){.val = 0, .min = -1000, .max = 1000};
+  par.fll.e = (value){.val = 0, .min = -10, .max = 10};
+  par.fll.laste = (value){.val = 0, .min = -10, .max = 10};
+  par.fll.ae = (value){.val = 0, .min = -1000000000, .max = 1000000000};
+  par.fll.aer = (value){.val = 0, .min = 0, .max = 10000000};
+  par.fll.de = (value){.val = 0, .min = -20, .max = 20};
+  par.fll.der = (value){.val = 0, .min = 0, .max = 1};
+  par.fll.fcset = (value){.val = 44.5875, .min = 44.3, .max = 45}; // MHz
+  par.fll.fc = (value){.val = 0, .min = -0.1, .max = 0.1}; // MHz
+  par.fll.emint = (value){.val = 1000, .min = 0, .max = 1e9}; // Hz
+  par.fll.emaxt = (value){.val = 1e6, .min = 0, .max = 1e9}; // Hz
 
   par.save = (value){.val = 0, .min = 0, .max = 1};
   par.load = (value){.val = 0, .min = 0, .max = 1};
