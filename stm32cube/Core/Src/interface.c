@@ -27,6 +27,8 @@ pointer getPointer(pointer p, char *s)
     parameters *ptmp = (parameters *)p.p;
     if (strcasecmp(s, "F") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->f), .type = "value"};
+    if (strcasecmp(s, "FOUT") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->fout), .type = "value"};
     if (strcasecmp(s, "FTW") == 0)
 	    pout = (pointer){.p = (void *)&(ptmp->ftw), .type = "value"};
     if (strcasecmp(s, "RF") == 0)
@@ -196,16 +198,17 @@ void setParam(value *p, double val)
 
 void initInterface(void)
 {
-  par.version = 2; // version of parameters structure, increment if structure changes
+  par.version = 3; // version of parameters structure, increment if structure changes
   par.ver = (value){.val = 1, .min = 0, .max = 100};
   par.f = (value){.val = 0, .min = 0, .max = 400};
+  par.fout = (value){.val = 0, .min = 0, .max = 400};
   par.ftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
   par.rf = (value){.val = 0, .min = 0, .max = 400};
   par.rftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
   par.cur = (value){.val = 31.7, .min = 8.6, .max = 31.7};
   par.mode = (value){.val = 1, .min = 0, .max = 1};
   par.apf = (value){.val = 0, .min = 0, .max = 1};
-  par.dv = (value){.val = 0, .min = -10, .max = 10};
+  par.dv = (value){.val = 0, .min = -100000, .max = 100000};
   par.dv_last = (value){.val = 0, .min = -10, .max = 10};
   par.dvs = (value){.val = 2e-6, .min = 0, .max = 1};
 

@@ -111,6 +111,9 @@ int32_t dv = 0;
 uint32_t dvui = 0;
 int last_mode = -1;
 
+void delay_us_tim13(uint16_t us);
+// void EXTI1_IRQHandler(void);
+
 void Flash_Write_Params(uint32_t address, parameters *data) {
   HAL_FLASH_Unlock();  // Odblokowanie pamięci flash
 
@@ -437,7 +440,7 @@ static void MX_TIM17_Init(void)
   htim17.Instance = TIM17;
   htim17.Init.Prescaler = 0;
   htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim17.Init.Period = 1680;
+  htim17.Init.Period = 815;
   htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim17.Init.RepetitionCounter = 0;
   htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -525,6 +528,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(MON_GPIO_Port, MON_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : RESET_Pin CS_Pin */
@@ -541,6 +547,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(IO_UPD_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : MON_Pin */
+  GPIO_InitStruct.Pin = MON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(MON_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LD1_Pin LD3_Pin */
   GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -550,7 +563,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : TTL1_IN_Pin */
   GPIO_InitStruct.Pin = TTL1_IN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(TTL1_IN_GPIO_Port, &GPIO_InitStruct);
 
@@ -812,21 +825,55 @@ void switch_mode() {
     }
 }
 
+void delay_us_tim13(uint16_t us) {
+  // __HAL_TIM_SET_COUNTER(&htim16, 0);
+  // while (__HAL_TIM_GET_COUNTER(&htim16) < us);
+  // HAL_TIM_Base_Stop(&htim13); // możesz też zostawić timer cały czas włączony
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 	if (GPIO_Pin == GPIO_PIN_1){
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_1);
 		HAL_NVIC_DisableIRQ(EXTI1_IRQn);
-		HAL_Delay_us(3);
-		HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, SET);
+    
+		// HAL_Delay_us(3);
+		// HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, SET);
+    MON_GPIO_Port->BSRR = MON_Pin;
 		dv = 0;
 		dvui = 0;
 		bitIndex = 0;
 		sign = 1;
+    // delay_us_tim13(3);
+    HAL_Delay_us(12);
+    MON_GPIO_Port ->BSRR = (uint32_t)MON_Pin << 16U; // Reset MON
 		HAL_TIM_Base_Start_IT(&htim17);
     }
 
 }
+
+// void EXTI1_IRQHandler(void)
+// {
+//     if (EXTI->PR1 & (1U << 1))  // sprawdź, czy przerwanie faktycznie od PA1
+//     {
+//         EXTI->PR1 = (1U << 1);  // wyczyść flagę przerwania (write 1 to clear)
+
+//         // SZYBKA REAKCJA:
+//         MON_GPIO_Port->BSRR = MON_Pin;
+
+//         dv = 0;
+//         dvui = 0;
+//         bitIndex = 0;
+//         sign = 1;
+
+//         delay_us_tim13(3);  // precyzyjne opóźnienie (zamień HAL_Delay_us na własne)
+
+//         MON_GPIO_Port->BSRR = (uint32_t)MON_Pin << 16;
+
+//         // Jeśli chcesz nadal używać HALa do startowania timera – OK
+//         HAL_TIM_Base_Start_IT(&htim17);
+//     }
+// }
 
 /* USER CODE END 4 */
 
@@ -889,10 +936,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM7) {
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, SET);
 
-	  if (last_f != par.f.val){
-		  send_freq(par.f.val);
-		  last_f = par.f.val;
-//		  par.rf.val = get_freq();
+    setParam(&par.fout, par.f.val);
+
+    if (last_f != par.fout.val){
+      send_freq(par.fout.val);
+      last_f = par.fout.val;
 	  }
 
 	  if (last_cur != par.cur.val){
@@ -909,11 +957,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, RESET);
   }
   if (htim->Instance == TIM17) {
-	  // Odbieramy bit co 20 µs
+	  // Odbieramy bit co timer17 µs
 	  if (bitIndex < 24) {
 
 //		  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-		  GPIO_PinState bit = HAL_GPIO_ReadPin(TTL1_IN_GPIO_Port, TTL1_IN_Pin);
+      MON_GPIO_Port->BSRR = MON_Pin;
+		  // GPIO_PinState bit = HAL_GPIO_ReadPin(TTL1_IN_GPIO_Port, TTL1_IN_Pin);
+      uint8_t bit = (TTL1_IN_GPIO_Port->IDR & TTL1_IN_Pin) ? 1 : 0;
 
 		  if (bitIndex == 0) {
 			  sign = (bit == GPIO_PIN_SET) ? 1 : -1;
@@ -922,32 +972,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  }
 		  bitIndex++;
 //		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);
+      MON_GPIO_Port ->BSRR = (uint32_t)MON_Pin << 16U; // Reset MON
 	  } else {
       // after reading last bit start cycle porcedure
+
+      MON_GPIO_Port->BSRR = MON_Pin;
 
 		  HAL_TIM_Base_Stop_IT(&htim17);
 		  dv = 8388606 - (int32_t)dvui;
 		  par.dv.val = sign * dv * par.dvs.val;
-
-      // standard operations like in normal mode
-      //--------------------------------------
-
-      if (last_f != par.f.val + par.pll.fm.val + par.pll.fm.val){
-        send_freq(par.f.val + par.pll.fm.val + par.pll.fm.val);
-        last_f = par.f.val + par.pll.fm.val + par.pll.fm.val;
-      }
-  
-      if (last_cur != par.cur.val){
-        send_current(par.cur.val);
-        last_cur = par.cur.val;
-      }
-  
-      if (par.ded.on.val == 1){
-        /* divide by 1e6 to convert to MHz,
-         * multiply by 1e3 to consider 1ms cycle */
-        par.f.val += par.ded.hzps.val*1e-9;
-      }
-      //--------------------------------------
 
 		  // correct dds from feedback
 
@@ -1026,8 +1059,30 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             setParam(&par.pll.on, 1);
       }
 
+      // standard operations like in normal mode
+      //--------------------------------------
+
+      setParam(&par.fout, par.f.val + par.pll.fm.val + par.pll.fm.val);
+
+      if (last_f != par.fout.val){
+        send_freq(par.fout.val);
+        last_f = par.fout.val;
+      }
+  
+      if (last_cur != par.cur.val){
+        send_current(par.cur.val);
+        last_cur = par.cur.val;
+      }
+  
+      if (par.ded.on.val == 1){
+        /* divide by 1e6 to convert to MHz,
+         * multiply by 1e3 to consider 1ms cycle */
+        par.f.val += par.ded.hzps.val*1e-9;
+      }
+      //--------------------------------------
+
 		  // end
-		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);
+		  MON_GPIO_Port ->BSRR = (uint32_t)MON_Pin << 16U; // Reset MON
 		  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_1);
 		  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 	  }

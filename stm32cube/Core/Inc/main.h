@@ -63,6 +63,8 @@ void Error_Handler(void);
 #define CS_GPIO_Port GPIOE
 #define IO_UPD_Pin GPIO_PIN_8
 #define IO_UPD_GPIO_Port GPIOF
+#define MON_Pin GPIO_PIN_3
+#define MON_GPIO_Port GPIOA
 #define LD1_Pin GPIO_PIN_0
 #define LD1_GPIO_Port GPIOB
 #define LD3_Pin GPIO_PIN_14

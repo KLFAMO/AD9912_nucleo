@@ -84,6 +84,7 @@ typedef struct {
     value load;
     value ver;
     value f;
+    value fout;
     value ftw;
     value rf;
     value rftw;
