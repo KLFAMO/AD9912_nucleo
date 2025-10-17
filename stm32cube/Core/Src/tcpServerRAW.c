@@ -60,6 +60,8 @@
 
 #include "lwip/tcp.h"
 
+extern struct netif gnetif;
+
 extern parameters par;
 /*  protocol states */
 enum tcp_server_states
@@ -80,8 +82,7 @@ struct tcp_server_struct
   struct pbuf *p;         /* pointer on the received/to be transmitted pbuf */
 };
 
-const char *welcome_msg = "\r\nad9912_nucleo>";
-
+const char *welcome_msg = "\ndds_nuc>";
 
 static err_t tcp_server_accept(void *arg, struct tcp_pcb *newpcb, err_t err);
 static err_t tcp_server_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
@@ -110,10 +111,8 @@ void tcp_server_init(void)
 
 	err_t err;
 
-	/* 2. bind _pcb to port 7 ( protocol) */
-	ip_addr_t myIPADDR;
-	IP_ADDR4(&myIPADDR, 192, 168, 3, 19);
-	err = tcp_bind(tpcb, &myIPADDR, 10);
+	/* 2. bind _pcb to port 10 */
+	err = tcp_bind(tpcb, &gnetif.ip_addr, 10);
 
 	if (err == ERR_OK)
 	{
