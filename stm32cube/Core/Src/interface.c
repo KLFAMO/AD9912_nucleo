@@ -25,58 +25,58 @@ pointer getPointer(pointer p, char *s)
   if (strcmp(p.type, "parameters") == 0)
   {
     parameters *ptmp = (parameters *)p.p;
-    if (strcmp(s, "F") == 0)
+    if (strcasecmp(s, "F") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->f), .type = "value"};
-    if (strcmp(s, "FTW") == 0)
+    if (strcasecmp(s, "FTW") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->ftw), .type = "value"};
-    if (strcmp(s, "RF") == 0)
+    if (strcasecmp(s, "RF") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->rf), .type = "value"};
-    if (strcmp(s, "RFTW") == 0)
+    if (strcasecmp(s, "RFTW") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->rftw), .type = "value"};
-    if (strcmp(s, "CUR") == 0)
+    if (strcasecmp(s, "CUR") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->cur), .type = "value"};
-    if (strcmp(s, "DED") == 0)
+    if (strcasecmp(s, "DED") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->ded), .type = "ded"};
   }
 
   if (strcmp(p.type, "ded") == 0)
   {
     sded *ptmp = (sded *)p.p;
-    if (strcmp(s, "ON") == 0)
+    if (strcasecmp(s, "ON") == 0)
       pout = (pointer){.p = (void *)&(ptmp->on), .type = "value"};
-    if (strcmp(s, "HZPS") == 0)
+    if (strcasecmp(s, "HZPS") == 0)
       pout = (pointer){.p = (void *)&(ptmp->hzps), .type = "value"};
   }
 
   if (strcmp(p.type, "value") == 0)
   {
     value *ptmp = (value *)p.p;
-    if (strcmp(s, "VAL") == 0)
+    if (strcasecmp(s, "VAL") == 0)
       pout = (pointer){.p = (void *)&(ptmp->val), .type = "double"};
-    if (strcmp(s, "MIN") == 0)
+    if (strcasecmp(s, "MIN") == 0)
       pout = (pointer){.p = (void *)&(ptmp->min), .type = "double"};
-    if (strcmp(s, "MAX") == 0)
+    if (strcasecmp(s, "MAX") == 0)
       pout = (pointer){.p = (void *)&(ptmp->max), .type = "double"};
-    if (strcmp(s, "TABON") == 0)
+    if (strcasecmp(s, "TABON") == 0)
       pout = (pointer){.p = (void *)&(ptmp->tabon), .type = "ison"};
-    if (strcmp(s, "MES") == 0)
+    if (strcasecmp(s, "MES") == 0)
       pout = (pointer){.p = (void *)&(ptmp->mes), .type = "mestab"};
   }
 
   if (strcmp(p.type, "mestab") == 0)
   {
     mestab *ptmp = (mestab *)p.p;
-    if (strcmp(s, "SIZE") == 0)
+    if (strcasecmp(s, "SIZE") == 0)
       pout = (pointer){.p = (void *)&(ptmp->tabsize), .type = "int"};
-    if (strcmp(s, "COUNT") == 0)
+    if (strcasecmp(s, "COUNT") == 0)
       pout = (pointer){.p = (void *)&(ptmp->tabcount), .type = "int"};
-    if (strcmp(s, "POS") == 0)
+    if (strcasecmp(s, "POS") == 0)
       pout = (pointer){.p = (void *)&(ptmp->tabpos), .type = "int"};
   }
   if (strcmp(p.type, "ison") == 0)
   {
     ison *ptmp = (ison *)p.p;
-    if (strcmp(s, "IS") == 0)
+    if (strcasecmp(s, "IS") == 0)
       pout = (pointer){.p = (void *)&(ptmp->is), .type = "int"};
   }
   return pout;

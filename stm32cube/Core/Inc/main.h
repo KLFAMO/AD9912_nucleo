@@ -63,6 +63,8 @@ void Error_Handler(void);
 #define CS_GPIO_Port GPIOE
 #define IO_UPD_Pin GPIO_PIN_8
 #define IO_UPD_GPIO_Port GPIOF
+#define MON_Pin GPIO_PIN_3
+#define MON_GPIO_Port GPIOA
 #define LD1_Pin GPIO_PIN_0
 #define LD1_GPIO_Port GPIOB
 #define LD3_Pin GPIO_PIN_14
@@ -71,6 +73,9 @@ void Error_Handler(void);
 #define STLINK_RX_GPIO_Port GPIOD
 #define STLINK_TX_Pin GPIO_PIN_9
 #define STLINK_TX_GPIO_Port GPIOD
+#define TTL1_IN_Pin GPIO_PIN_1
+#define TTL1_IN_GPIO_Port GPIOD
+#define TTL1_IN_EXTI_IRQn EXTI1_IRQn
 #define LD2_Pin GPIO_PIN_1
 #define LD2_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
