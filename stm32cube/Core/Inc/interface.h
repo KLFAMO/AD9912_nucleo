@@ -41,7 +41,12 @@ typedef struct{
 }sded;
 
 typedef struct {
+    double version;
+    value save;
+    value load;
+    value ver;
     value f;
+    value fout;
     value ftw;
     value rf;
     value rftw;

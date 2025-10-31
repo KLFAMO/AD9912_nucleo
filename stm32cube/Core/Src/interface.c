@@ -27,6 +27,8 @@ pointer getPointer(pointer p, char *s)
     parameters *ptmp = (parameters *)p.p;
     if (strcasecmp(s, "F") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->f), .type = "value"};
+    if (strcasecmp(s, "FOUT") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->fout), .type = "value"};
     if (strcasecmp(s, "FTW") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->ftw), .type = "value"};
     if (strcasecmp(s, "RF") == 0)
@@ -37,6 +39,13 @@ pointer getPointer(pointer p, char *s)
 	  pout = (pointer){.p = (void *)&(ptmp->cur), .type = "value"};
     if (strcasecmp(s, "DED") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->ded), .type = "ded"};
+
+    if (strcasecmp(s, "SAVE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->save), .type = "value"};
+    if (strcasecmp(s, "LOAD") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->load), .type = "value"};
+    if (strcasecmp(s, "VER") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->ver), .type = "value"};
   }
 
   if (strcmp(p.type, "ded") == 0)
@@ -104,13 +113,19 @@ void setParam(value *p, double val)
 
 void initInterface(void)
 {
+  par.version = 2; // version of parameters structure, increment if structure changes
+  par.ver = (value){.val = 1, .min = 0, .max = 100};
   par.f = (value){.val = 0, .min = 0, .max = 400};
+  par.fout = (value){.val = 0, .min = 0, .max = 400};
   par.ftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
   par.rf = (value){.val = 0, .min = 0, .max = 400};
   par.rftw = (value){.val = 0, .min = 0, .max = 0xFFFFFFFFFFFFFF};
   par.cur = (value){.val = 31.7, .min = 8.6, .max = 31.7};
   par.ded.on = (value){.val = 0, .min = 0, .max = 1};
   par.ded.hzps = (value){.val = 0.0, .min = -10, .max = 10};
+
+    par.save = (value){.val = 0, .min = 0, .max = 1};
+    par.load = (value){.val = 0, .min = 0, .max = 1};
 }
 
 /*------------------------*/

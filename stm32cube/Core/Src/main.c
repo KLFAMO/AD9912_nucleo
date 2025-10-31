@@ -39,6 +39,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 //#define PORT	5015          <----
+#define FLASH_PARAM_START_ADDR  ((uint32_t)0x081E0000)  // bank 2, sektor 7
+#define FLASH_WORD_SIZE        (32)  // Flash word = 256-bit = 32 bytes
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,7 +53,6 @@
 SPI_HandleTypeDef hspi4;
 
 TIM_HandleTypeDef htim7;
-TIM_HandleTypeDef htim17;
 
 UART_HandleTypeDef huart3;
 
@@ -102,6 +103,49 @@ const uint16_t DAC_Current_AddrC = 0x040C;
 const double I_DAC_REF = 0.120;	// mA if R_DAC_REF = 10 k[ohm]
 const double I_DAC_FS = 10.0;	// mA in output
 
+void Flash_Write_Params(uint32_t address, parameters *data) {
+  HAL_FLASH_Unlock();  // Odblokowanie pamięci flash
+
+  FLASH_EraseInitTypeDef eraseInitStruct;
+  uint32_t sectorError;
+
+  // Kasowanie sektora przed zapisem
+  eraseInitStruct.TypeErase    = FLASH_TYPEERASE_SECTORS;
+  eraseInitStruct.Banks        = FLASH_BANK_2;  // **Bank 2**
+  eraseInitStruct.Sector       = FLASH_SECTOR_7;  // **Sektor 7**
+  eraseInitStruct.NbSectors    = 1;
+  eraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+
+  if (HAL_FLASHEx_Erase(&eraseInitStruct, &sectorError) != HAL_OK) {
+      HAL_FLASH_Lock();
+      return;  // Błąd kasowania
+  }
+  
+  uint64_t *data_ptr = (uint64_t*)data;
+  uint64_t flash_word[4];
+  for (uint32_t i = 0; i < sizeof(parameters) / 8; i += 4) {
+      flash_word[0] = (i < sizeof(parameters) / 8) ? data_ptr[i] : 0xFFFFFFFFFFFFFFFF;
+      flash_word[1] = (i + 1 < sizeof(parameters) / 8) ? data_ptr[i + 1] : 0xFFFFFFFFFFFFFFFF;
+      flash_word[2] = (i + 2 < sizeof(parameters) / 8) ? data_ptr[i + 2] : 0xFFFFFFFFFFFFFFFF;
+      flash_word[3] = (i + 3 < sizeof(parameters) / 8) ? data_ptr[i + 3] : 0xFFFFFFFFFFFFFFFF;
+
+      if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, address + i * 8, (uint64_t)flash_word) != HAL_OK) {
+          HAL_FLASH_Lock();
+          return;  // Błąd zapisu
+      }
+  }
+
+  HAL_FLASH_Lock();  // Zablokowanie pamięci flash
+}
+
+void Flash_Read_Params(uint32_t address, parameters *data) {
+  memcpy(data, (void*)address, sizeof(parameters));  // Odczytaj całą strukturę
+}
+
+uint32_t Flash_Read_Version(uint32_t address) {
+  return *(volatile double*)address;  // Odczytaj pierwsze 4 bajty
+}
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -111,7 +155,6 @@ static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_SPI4_Init(void);
-static void MX_TIM17_Init(void);
 /* USER CODE BEGIN PFP */
 
 void send_freq(double fdds);
@@ -172,12 +215,19 @@ int main(void)
   MX_LWIP_Init();
   MX_TIM7_Init();
   MX_SPI4_Init();
-  MX_TIM17_Init();
   /* USER CODE BEGIN 2 */
 
   //tcp_client_init();
   tcp_server_init();
   initInterface();
+
+  // read par from flash
+  if (par.version != Flash_Read_Version(FLASH_PARAM_START_ADDR)){
+    Flash_Write_Params(FLASH_PARAM_START_ADDR, &par);
+  }
+  else{
+    Flash_Read_Params(FLASH_PARAM_START_ADDR, &par);
+  }
 
   set_ref(100.0);
   send_freq(par.f.val);
@@ -197,7 +247,14 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  ethernetif_input(&gnetif);
 	  sys_check_timeouts();
-
+    if (par.save.val == 1){
+      par.save.val = 0;
+      Flash_Write_Params(FLASH_PARAM_START_ADDR, &par);
+    }
+    if (par.load.val == 1){
+      par.load.val = 0;
+      Flash_Read_Params(FLASH_PARAM_START_ADDR, &par);
+    }
 	}
   /* USER CODE END 3 */
 }
@@ -324,7 +381,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 80;
+  htim7.Init.Prescaler = 79;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 1000;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -341,38 +398,6 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 2 */
 
   /* USER CODE END TIM7_Init 2 */
-
-}
-
-/**
-  * @brief TIM17 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM17_Init(void)
-{
-
-  /* USER CODE BEGIN TIM17_Init 0 */
-
-  /* USER CODE END TIM17_Init 0 */
-
-  /* USER CODE BEGIN TIM17_Init 1 */
-
-  /* USER CODE END TIM17_Init 1 */
-  htim17.Instance = TIM17;
-  htim17.Init.Prescaler = 0;
-  htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim17.Init.Period = 815;
-  htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim17.Init.RepetitionCounter = 0;
-  htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim17) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM17_Init 2 */
-
-  /* USER CODE END TIM17_Init 2 */
 
 }
 
@@ -791,10 +816,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM7) {
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, SET);
 
-	  if (last_f != par.f.val){
-		  send_freq(par.f.val);
-		  last_f = par.f.val;
-//		  par.rf.val = get_freq();
+    setParam(&par.fout, par.f.val);
+
+    if (last_f != par.fout.val){
+      send_freq(par.fout.val);
+      last_f = par.fout.val;
 	  }
 
 	  if (last_cur != par.cur.val){
