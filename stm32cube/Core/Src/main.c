@@ -171,6 +171,31 @@ double get_freq(void);
 extern struct netif gnetif;
 extern parameters par;
 int32_t raw;
+
+static inline void CS_Low(void)
+{
+    if ((int)par.dds.val == 1){
+        HAL_GPIO_WritePin(CS2_GPIO_Port, CS2_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+    }
+    else{
+        HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(CS2_GPIO_Port, CS2_Pin, GPIO_PIN_SET);
+    }
+}
+
+static inline void CS_High(void)
+{
+    if ((int)par.dds.val == 1){
+        HAL_GPIO_WritePin(CS2_GPIO_Port, CS2_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+    }
+    else{
+        HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(CS2_GPIO_Port, CS2_Pin, GPIO_PIN_RESET);
+    }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -229,10 +254,20 @@ int main(void)
     Flash_Read_Params(FLASH_PARAM_START_ADDR, &par);
   }
 
+  par.dds.val = 0;
   set_ref(100.0);
   send_freq(par.f.val);
   send_current(par.cur.val);
   par.rf.val = get_freq();
+
+  // par.dds.val = 1;
+  // set_ref(100.0);
+  // send_freq(par.f.val);
+  // send_current(par.cur.val);
+  // par.rf.val = get_freq();
+
+  par.dds.val = 0;
+
 
   HAL_TIM_Base_Start_IT(&htim7);
 
@@ -469,10 +504,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, RESET_Pin|CS_Pin|LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, RESET_Pin|LD2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(CS2_GPIO_Port, CS2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(MON_GPIO_Port, MON_Pin, GPIO_PIN_RESET);
@@ -494,12 +535,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(IO_UPD_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : MON_Pin */
-  GPIO_InitStruct.Pin = MON_Pin;
+  /*Configure GPIO pins : CS2_Pin MON_Pin */
+  GPIO_InitStruct.Pin = CS2_Pin|MON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(MON_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LD1_Pin LD3_Pin */
   GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin;
@@ -536,7 +577,7 @@ void send_ftw(uint64_t ftw){
 
 	spi_addr[0] = ((uint8_t*)&FTW_Addr6)[1];
 	spi_addr[1] = ((uint8_t*)&FTW_Addr6)[0];
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	CS_Low();
 	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
 	value = ((uint8_t *)&ftw)[0];
 	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
@@ -570,7 +611,7 @@ void send_ftw(uint64_t ftw){
 	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
 	value = ((uint8_t *)&ftw)[5];
 	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+	CS_High();
 
 	// Update registers
 	HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_SET);
@@ -592,7 +633,7 @@ void send_freq(double fdds)
 
 	spi_addr[0] = ((uint8_t*)&FTW_Addr6)[1];
 	spi_addr[1] = ((uint8_t*)&FTW_Addr6)[0];
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	CS_Low();
 	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
 	value = ((uint8_t *)&ftw)[0];
 	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
@@ -626,7 +667,7 @@ void send_freq(double fdds)
 	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
 	value = ((uint8_t *)&ftw)[5];
 	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+	CS_High();
 
 	// Update registers
 	HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_SET);
@@ -651,7 +692,7 @@ void send_current(double idac)
 
 	spi_addr[0] = ((uint8_t*)&DAC_Current_AddrB)[1];
 	spi_addr[1] = ((uint8_t*)&DAC_Current_AddrB)[0];
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	CS_Low();
 	HAL_SPI_Transmit(&hspi4, (uint8_t *)&spi_addr, 2, 100);
 	value = ((uint8_t *)&fsc)[0];
 	HAL_SPI_Transmit(&hspi4, ((uint8_t *)&value), 1, 100);
@@ -674,27 +715,27 @@ void set_ref(double ref)
 
 		f_s = 1000.0;
 
-		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+		CS_Low();
 		HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
 		HAL_SPI_Transmit(&hspi4, (uint8_t*)&PLL_Enabled, 1, 100);
-		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+		CS_High();
 
 //		// set N-divider for PLL
 		spi_addr[0] = ((uint8_t*)&N_divider_Addr)[1];
 		spi_addr[1] = ((uint8_t*)&N_divider_Addr)[0];
-		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+		CS_Low();
 		HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
 		HAL_SPI_Transmit(&hspi4, (uint8_t*)&N_Divider, 1, 100);
-		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+		CS_High();
 
 	}else if(ref == 250.0 || ref == 1000.0){
 
 		f_s = ref;
 
-		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+		CS_Low();
 		HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
 		HAL_SPI_Transmit(&hspi4, (uint8_t*)&PLL_Bypassed, 1, 100);
-		HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+		CS_High();
 
 		send_freq(f_DDS);
 	}
@@ -711,7 +752,7 @@ double get_freq(){
 	address = READ_Intruction | FTW_Addr6;
 	spi_addr[0] = ((uint8_t*)&address)[1];
 	spi_addr[1] = ((uint8_t*)&address)[0];
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	CS_Low();
 	HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
 	HAL_SPI_Receive(&hspi4, (uint8_t*)spi_buf, 1, 100);
 	((uint8_t *)&ftw)[0] = (unsigned int)spi_buf[0];
@@ -745,7 +786,7 @@ double get_freq(){
 	HAL_SPI_Transmit(&hspi4, (uint8_t*)&spi_addr, 2, 100);
 	HAL_SPI_Receive(&hspi4, (uint8_t*)spi_buf, 1, 100);
 	((uint8_t *)&ftw)[5] = (unsigned int)spi_buf[0];
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+	CS_High();
 
 	par.rftw.val = (double)ftw;
 	fDDS = (ftw/pow(2, 48)) * f_s;

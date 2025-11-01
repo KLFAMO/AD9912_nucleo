@@ -51,6 +51,7 @@ typedef struct {
     value rf;
     value rftw;
     value cur;
+    value dds;
     sded ded;
 } parameters;
 
