@@ -50,6 +50,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 
+SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi4;
 
 TIM_HandleTypeDef htim7;
@@ -66,6 +67,9 @@ int uart_buf_len;
 
 char spi_buf[100];
 char spi_addr[20];
+
+static uint8_t spi1_rx_buf[8]; // buffer for communication between nucleos
+static uint8_t spi1_tx_dummy[8];
 
 const uint16_t READ_Intruction = 0x8000;
 
@@ -97,6 +101,7 @@ double f_DDS = 0.0;	// MHz of initial frequency
 double f_ref = 100.0;	// MHz of reference frequency
 double last_f = 0;
 double last_cur = 0;
+double last_spi_master = 0;
 
 const uint16_t DAC_Current_AddrB = 0x040B;
 const uint16_t DAC_Current_AddrC = 0x040C;
@@ -155,6 +160,7 @@ static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_SPI4_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 void send_freq(double fdds);
@@ -162,6 +168,9 @@ void send_ftw(uint64_t ftw);
 void send_current(double idac);
 void set_ref(double ref);
 double get_freq(void);
+
+HAL_StatusTypeDef SPI1_ReconfigureFromPar(void);
+HAL_StatusTypeDef SPI1_SendDouble(double value);
 
 /* USER CODE END PFP */
 
@@ -215,6 +224,7 @@ int main(void)
   MX_LWIP_Init();
   MX_TIM7_Init();
   MX_SPI4_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
   //tcp_client_init();
@@ -236,6 +246,9 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim7);
 
+  // par.spi.on.val = 1.0;
+  SPI1_ReconfigureFromPar();
+  // par.spi.on.val = 0.0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -255,6 +268,7 @@ int main(void)
       par.load.val = 0;
       Flash_Read_Params(FLASH_PARAM_START_ADDR, &par);
     }
+
 	}
   /* USER CODE END 3 */
 }
@@ -313,6 +327,53 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_SLAVE;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_4BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 0x0;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+  hspi1.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
+  hspi1.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
+  hspi1.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi1.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi1.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
+  hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+  hspi1.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
+  hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+  hspi1.Init.IOSwap = SPI_IO_SWAP_DISABLE;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
 }
 
 /**
@@ -469,10 +530,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, RESET_Pin|CS_Pin|LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, RESET_Pin|LD2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(IO_UPD_GPIO_Port, IO_UPD_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(CS2_GPIO_Port, CS2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(MON_GPIO_Port, MON_Pin, GPIO_PIN_RESET);
@@ -494,12 +561,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(IO_UPD_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : MON_Pin */
-  GPIO_InitStruct.Pin = MON_Pin;
+  /*Configure GPIO pins : CS2_Pin MON_Pin */
+  GPIO_InitStruct.Pin = CS2_Pin|MON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(MON_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LD1_Pin LD3_Pin */
   GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin;
@@ -755,6 +822,144 @@ double get_freq(){
 }
 
 
+static inline void SPI1_FlushAndClear(void)
+{
+  // delete OVR flag
+  __HAL_SPI_CLEAR_OVRFLAG(&hspi1);
+
+  // empty RX FIFO
+  while (__HAL_SPI_GET_FLAG(&hspi1, SPI_FLAG_RXP)) { // RXP = "RX data available"
+    volatile uint8_t dump = (uint8_t)(hspi1.Instance->RXDR);
+    (void)dump;
+  }
+}
+
+// save buffers for SPI1 SLAVE TRx-IT
+static inline HAL_StatusTypeDef SPI1_SlaveArm_TRx_IT(void)
+{
+  SPI1_FlushAndClear();
+
+  // send 8 bytes of dummy data
+  memset(spi1_tx_dummy, 0, sizeof(spi1_tx_dummy));
+  return HAL_SPI_TransmitReceive_IT(&hspi1, spi1_tx_dummy, spi1_rx_buf, sizeof(spi1_rx_buf));
+}
+
+// === CALLBACKs HAL ===
+
+// end of transmit-receive in SLAVE mode
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  if (hspi->Instance == SPI1) {
+    double v;
+    memcpy(&v, spi1_rx_buf, 8);
+    par.spi.rcv.val = v;
+
+    if (par.spi.use.val >= 0.5) {
+      par.f.val = (v + par.spi.offsin.val)*par.spi.gain.val + par.spi.offsout.val;
+    }
+
+    // prepare for next TRx IT
+    SPI1_SlaveArm_TRx_IT();
+  }
+}
+
+// (just in case, leave also RxCplt; it won't hurt)
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  if (hspi->Instance == SPI1) {
+    double v;
+    memcpy(&v, spi1_rx_buf, 8);
+    par.spi.rcv.val = v;
+    if (par.spi.use.val >= 0.5) {
+      par.f.val = (v + par.spi.offsin.val)*par.spi.gain.val + par.spi.offsout.val;
+    }
+    SPI1_SlaveArm_TRx_IT();
+  }
+}
+
+// Error callback
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
+{
+  if (hspi->Instance == SPI1) {
+    HAL_SPI_Abort(hspi);
+    SPI1_FlushAndClear();
+    if (par.spi.master.val < 0.5) {   // if SLAVE
+      SPI1_SlaveArm_TRx_IT();
+    }
+  }
+}
+
+/**
+ * @brief  soft reconfigure SPI1 according to 'par.spi' settings.
+ */
+HAL_StatusTypeDef SPI1_ReconfigureFromPar(void)
+{
+  double spi_on_tmp = par.spi.on.val;
+  par.spi.on.val = 0;
+
+  HAL_SPI_Abort(&hspi1);
+  HAL_SPI_DeInit(&hspi1);
+
+  // Wspólne ustawienia
+  hspi1.Instance               = SPI1;
+  hspi1.Init.Direction         = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize          = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity       = SPI_POLARITY_LOW;      // CPOL=0
+  hspi1.Init.CLKPhase          = SPI_PHASE_1EDGE;       // CPHA=1 (Mode 0)
+  hspi1.Init.FirstBit          = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode            = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial     = 0x0;
+  hspi1.Init.NSSPMode          = SPI_NSS_PULSE_DISABLE;
+  hspi1.Init.NSSPolarity       = SPI_NSS_POLARITY_LOW;
+  hspi1.Init.FifoThreshold     = SPI_FIFO_THRESHOLD_01DATA;
+  hspi1.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi1.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi1.Init.MasterSSIdleness  = SPI_MASTER_SS_IDLENESS_00CYCLE;
+  hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+  hspi1.Init.MasterReceiverAutoSusp  = SPI_MASTER_RX_AUTOSUSP_DISABLE;
+  hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+  hspi1.Init.IOSwap            = SPI_IO_SWAP_DISABLE;
+  hspi1.Init.CRCLength         = SPI_CRC_LENGTH_8BIT;
+
+  const uint8_t is_master = (par.spi.master.val >= 0.5);
+
+  if (is_master) {
+    hspi1.Init.Mode              = SPI_MODE_MASTER;
+    hspi1.Init.NSS               = SPI_NSS_HARD_OUTPUT;       
+    hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;  // slow for testing
+  } else {
+    hspi1.Init.Mode              = SPI_MODE_SLAVE;
+    hspi1.Init.NSS               = SPI_NSS_HARD_INPUT;         
+    hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;    // ignored in SLAVE
+  }
+
+  par.spi.on.val = spi_on_tmp;
+
+  HAL_StatusTypeDef st = HAL_SPI_Init(&hspi1);
+  if (st != HAL_OK) return st;
+
+  // SLAVE: arm receive-transmit IT (more stable form H7)
+  if (!is_master) {
+    st = SPI1_SlaveArm_TRx_IT();
+    if (st != HAL_OK) return st;
+  }
+
+  return HAL_OK;
+}
+
+/**
+ * @brief  MASTER: send one double value via SPI1 (blocking) (8 bytes).
+ */
+HAL_StatusTypeDef SPI1_SendDouble(double value)
+{
+  uint8_t buf[8];
+  memcpy(buf, &value, 8);
+  return HAL_SPI_Transmit(&hspi1, buf, sizeof(buf), 100);
+}
+
+
+
 /* USER CODE END 4 */
 
 /* MPU Configuration */
@@ -827,6 +1032,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  send_current(par.cur.val);
 		  last_cur = par.cur.val;
 	  }
+
+    if (last_spi_master != par.spi.master.val){
+      SPI1_ReconfigureFromPar();
+      last_spi_master = par.spi.master.val;
+    }
+
+    if (par.spi.on.val > 0.5 && par.spi.master.val >= 0.5){
+      SPI1_SendDouble(par.fout.val);
+    }
 
 	  if (par.ded.on.val == 1){
 		  /* divide by 1e6 to convert to MHz,

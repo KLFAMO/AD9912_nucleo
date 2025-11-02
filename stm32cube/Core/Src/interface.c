@@ -39,6 +39,8 @@ pointer getPointer(pointer p, char *s)
 	  pout = (pointer){.p = (void *)&(ptmp->cur), .type = "value"};
     if (strcasecmp(s, "DED") == 0)
 	  pout = (pointer){.p = (void *)&(ptmp->ded), .type = "ded"};
+    if (strcasecmp(s, "SPI") == 0)
+    pout = (pointer){.p = (void *)&(ptmp->spi), .type = "spi"};
 
     if (strcasecmp(s, "SAVE") == 0)
       pout = (pointer){.p = (void *)&(ptmp->save), .type = "value"};
@@ -55,6 +57,25 @@ pointer getPointer(pointer p, char *s)
       pout = (pointer){.p = (void *)&(ptmp->on), .type = "value"};
     if (strcasecmp(s, "HZPS") == 0)
       pout = (pointer){.p = (void *)&(ptmp->hzps), .type = "value"};
+  }
+
+  if (strcmp(p.type, "spi") == 0)
+  {
+    sspi *ptmp = (sspi *)p.p;
+    if (strcasecmp(s, "ON") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->on), .type = "value"};
+    if (strcasecmp(s, "MASTER") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->master), .type = "value"};
+    if (strcasecmp(s, "RCV") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->rcv), .type = "value"};
+    if (strcasecmp(s, "USE") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->use), .type = "value"};
+    if (strcasecmp(s, "offsin") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->offsin), .type = "value"};
+    if (strcasecmp(s, "offsout") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->offsout), .type = "value"};
+    if (strcasecmp(s, "GAIN") == 0)
+      pout = (pointer){.p = (void *)&(ptmp->gain), .type = "value"};
   }
 
   if (strcmp(p.type, "value") == 0)
@@ -113,7 +134,7 @@ void setParam(value *p, double val)
 
 void initInterface(void)
 {
-  par.version = 2; // version of parameters structure, increment if structure changes
+  par.version = 6; // version of parameters structure, increment if structure changes
   par.ver = (value){.val = 1, .min = 0, .max = 100};
   par.f = (value){.val = 0, .min = 0, .max = 400};
   par.fout = (value){.val = 0, .min = 0, .max = 400};
@@ -123,6 +144,13 @@ void initInterface(void)
   par.cur = (value){.val = 31.7, .min = 8.6, .max = 31.7};
   par.ded.on = (value){.val = 0, .min = 0, .max = 1};
   par.ded.hzps = (value){.val = 0.0, .min = -10, .max = 10};
+  par.spi.on = (value){.val = 0, .min = 0, .max = 1};
+  par.spi.master = (value){.val = 0, .min = 0, .max = 1};
+  par.spi.rcv = (value){.val = 0, .min = -500, .max = 500};
+  par.spi.use = (value){.val = 0, .min = 0, .max = 1};
+  par.spi.offsin = (value){.val = 0, .min = -200, .max = 200};
+  par.spi.offsout = (value){.val = 0, .min = -200, .max = 200};
+  par.spi.gain = (value){.val = 1, .min = -100, .max = 100};
 
     par.save = (value){.val = 0, .min = 0, .max = 1};
     par.load = (value){.val = 0, .min = 0, .max = 1};

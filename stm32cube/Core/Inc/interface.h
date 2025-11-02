@@ -40,6 +40,16 @@ typedef struct{
 	value hzps;
 }sded;
 
+typedef struct{
+	value master;
+	value rcv;
+    value on;
+    value use;
+    value offsin;
+    value offsout;
+    value gain;
+}sspi;
+
 typedef struct {
     double version;
     value save;
@@ -52,6 +62,7 @@ typedef struct {
     value rftw;
     value cur;
     sded ded;
+    sspi spi;
 } parameters;
 
 pointer getPointer(pointer,char * );
